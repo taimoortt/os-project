@@ -86,6 +86,7 @@ LteChannel::StartRx (PacketBurst* p, TransmittedSignal* txSignal, NetworkNode* s
           std::cout << "LteChannel::StartRx add propagation loss" << std::endl;
 #endif
       // AddLossModel covers the propagation signal loss(multipath, etc)
+      // the fastfading loss changes every TTI
 		  rxSignal = GetPropagationLossModel ()->AddLossModel (src, dst, txSignal);
 	    }
 	  else

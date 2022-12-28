@@ -41,6 +41,7 @@
 #include "enb-lte-phy.h"
 #include "../utility/ComputePathLoss.h"
 #include <map>
+#include <limits>
 
 /*
  * Noise is computed as follows:
@@ -133,7 +134,8 @@ UeLtePhy::StartRx (PacketBurst* p, TransmittedSignal* txSignal)
 
   //compute noise + interference
   std::map<int, double> rsrp;
-  double tot_interference = 0;
+  double tot_interference_watt = 0;
+  double neighbor_rsrp = -std::numeric_limits<double>::infinity();
   UserEquipment* ue = (UserEquipment*)GetDevice();
   if (GetInterference () != NULL) {
     rsrp = GetInterference ()->ComputeInterference (ue);
@@ -142,11 +144,14 @@ UeLtePhy::StartRx (PacketBurst* p, TransmittedSignal* txSignal)
   for (auto it = rsrp.begin(); it != rsrp.end(); ++it) {
     // exclude the serving cell
     if (it->first != ue->GetTargetNode()->GetIDNetworkNode()) {
-      tot_interference += it->second;
+      tot_interference_watt += it->second;
+      double cell_rsrp = 10. * log10(it->second);
+      if (neighbor_rsrp < cell_rsrp)
+        neighbor_rsrp = cell_rsrp;
     }
   }
 
-  double noise_interference = 10. * log10 (pow(10., NOISE/10) + tot_interference); // dB
+  double noise_interference = 10. * log10 (pow(10., NOISE/10) + tot_interference_watt); // dB
   double avg_rsrp = 0;
   double avg_sinr = 0;
 
@@ -168,10 +173,12 @@ UeLtePhy::StartRx (PacketBurst* p, TransmittedSignal* txSignal)
     
   avg_rsrp /= rxSignalValues.size();
   avg_sinr /= rxSignalValues.size();
-  std::cout << "\t UE(" << ue->GetIDNetworkNode() << ")"
-    << " real RSRP(db) from serving eNB " << avg_rsrp
-    << " noise(db) " << NOISE << " interference(db) " << 10 * log10(tot_interference)
-    << " SINR(db) " << avg_sinr << std::endl;
+  int tti = Simulator::Init()->Now() * 1000;
+  std::cout << tti << " UE(" << ue->GetIDNetworkNode() << ")"
+    << " real RSRP from serving eNB " << avg_rsrp
+    << " noise " << NOISE << " interference " << 10 * log10(tot_interference_watt)
+    << " SINR " << avg_sinr
+    << " neighbor_diff " << avg_rsrp - neighbor_rsrp << std::endl;
 
   //CHECK FOR PHY ERROR
   bool phyError;

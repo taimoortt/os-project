@@ -28,6 +28,7 @@
 #include "../utility/ComputePathLoss.h"
 #include "lte-phy.h"
 #include "../core/spectrum/bandwidth-manager.h"
+#include "../core/eventScheduler/simulator.h"
 
 Interference::Interference()
 {}
@@ -46,8 +47,7 @@ Interference::ComputeInterference (UserEquipment *ue)
   std::vector<ENodeB*> *eNBs = NetworkManager::Init ()->GetENodeBContainer ();
   std::vector<ENodeB*>::iterator it;
 
-  //std::cout << "Compute interference for UE " << ue->GetIDNetworkNode () << " ,target node " << ue->GetTargetNode ()->GetIDNetworkNode ()<< std::endl;
-
+  int tti = Simulator::Init()->Now() * 1000;
   for (it = eNBs->begin (); it != eNBs->end (); it++)
     {
 	  node = (*it);
@@ -66,17 +66,16 @@ Interference::ComputeInterference (UserEquipment *ue)
           rsrp[node->GetIDNetworkNode()] = nodeInterference;
           if (node->GetIDNetworkNode() != ue->GetTargetNode()->GetIDNetworkNode()) {
             tot_interference += nodeInterference;
-            std::cout << "\t UE(" << ue->GetIDNetworkNode() << ")"
+            std::cerr << tti << " UE(" << ue->GetIDNetworkNode() << ")"
               << " interference from eNB " << node->GetIDNetworkNode()
 				      // << " " << powerTXForSubBandwidth << " "  << ComputePathLossForInterference (node, ue)
-				      << " db:" << nodeInterference_db << " watt:" << nodeInterference
-				      // << " --> tot: " << tot_interference
+				      << ": " << nodeInterference_db << " interfere(watt): " << nodeInterference
 				      << std::endl;
           }
           else {
-            std::cout << "\t UE(" << ue->GetIDNetworkNode() << ")"
+            std::cout << tti << " UE(" << ue->GetIDNetworkNode() << ")"
               << " RSRP from serving eNB " << node->GetIDNetworkNode()
-              << " db:" << nodeInterference_db << " watt:" << nodeInterference
+              << ": " << nodeInterference_db << " RSRP(watt): " << nodeInterference
               << std::endl;
           }
 	    }

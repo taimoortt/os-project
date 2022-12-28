@@ -32,7 +32,7 @@ static std::string path ("/home/alvin/Research/SmallCell/lte-sim-dev/");
 
 
 /* tracing */
-static bool _APP_TRACING_ = true;
+static bool _APP_TRACING_ = false;
 static bool _RLC_TRACING_ = false;
 static bool _MAC_TRACING_ = false;
 static bool _PHY_TRACING_ = false;
@@ -69,7 +69,7 @@ static bool _channel_AWGN_ = false;
 //#define BLER_DEBUG
 //#define MOBILITY_DEBUG
 //#define MOBILITY_DEBUG_TAB
-//#define HANDOVER_DEBUG
+#define HANDOVER_DEBUG
 //#define TRANSMISSION_DEBUG
 //#define CHANNEL_REALIZATION_DEBUG
 //#define TEST_DEVICE_ON_CHANNEL

@@ -33,7 +33,7 @@
 
 MacroCellUrbanAreaChannelRealization::MacroCellUrbanAreaChannelRealization(NetworkNode* src, NetworkNode* dst)
 {
-  std::cout << "Channel Realization: Macro Cell Urban Area" << std::endl;
+  // std::cout << "Channel Realization: Macro Cell Urban Area" << std::endl;
   SetSamplingPeriod (0.5);
 
   m_penetrationLoss = 10;
