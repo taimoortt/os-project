@@ -210,7 +210,7 @@ DownlinkPacketScheduler::RBsAllocation ()
 
 
   AMCModule *amc = GetMacEntity ()->GetAmcModule ();
-  double l_dAllocatedRBCounter = 0;
+  int l_dAllocatedRBCounter = 0;
 
   int l_iNumberOfUsers = ((ENodeB*)this->GetMacEntity()->GetDevice())->GetNbOfUserEquipmentRecords();
 
@@ -226,14 +226,14 @@ DownlinkPacketScheduler::RBsAllocation ()
       if (l_iScheduledFlows == flows->size ())
           break;
 
-      double targetMetric = 0;
+      double targetMetric = -1;
       bool RBIsAllocated = false;
       FlowToSchedule* scheduledFlow;
       int l_iScheduledFlowIndex = 0;
 
       for (int k = 0; k < flows->size (); k++)
         {
-          if (metrics[s][k] > targetMetric && !l_bFlowScheduled[k])
+          if (metrics[s][k] >= targetMetric && !l_bFlowScheduled[k])
             {
               targetMetric = metrics[s][k];
               RBIsAllocated = true;
