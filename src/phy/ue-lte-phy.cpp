@@ -170,15 +170,16 @@ UeLtePhy::StartRx (PacketBurst* p, TransmittedSignal* txSignal)
       avg_rsrp += power;
       avg_sinr += (power - noise_interference);
     }
-    
   avg_rsrp /= rxSignalValues.size();
   avg_sinr /= rxSignalValues.size();
-  int tti = Simulator::Init()->Now() * 1000;
-  std::cout << tti << " UE(" << ue->GetIDNetworkNode() << ")"
+
+  #ifdef INTERFERENCE_DEBUG
+  std::cout << Simulator::Init()->Now() << " UE(" << ue->GetIDNetworkNode() << ")"
     << " real RSRP from serving eNB " << avg_rsrp
     << " noise " << NOISE << " interference " << 10 * log10(tot_interference_watt)
     << " SINR " << avg_sinr
     << " neighbor_diff " << avg_rsrp - neighbor_rsrp << std::endl;
+  #endif
 
   //CHECK FOR PHY ERROR
   bool phyError;

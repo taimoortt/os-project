@@ -30,6 +30,8 @@ public:
 	virtual ~FullbandCqiManager();
 
 	virtual void CreateCqiFeedbacks (std::vector<double> sinr);
+
+  void CreateMuteCommand() {}
 };
 
 #endif /* FULLBANDCQIMANAGER_H_ */

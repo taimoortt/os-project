@@ -116,6 +116,8 @@ public:
 
 	void UpdateUserPosition(void);
 	void ResourceAllocation(void);
+
+  void CentralResourceAllocation(void);
 };
 
 #endif /* FRAMEMANAGER_H_ */

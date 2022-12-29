@@ -25,6 +25,7 @@
 #include "../load-parameters.h"
 #include "../device/ENodeB.h"
 #include "../device/HeNodeB.h"
+#include <cassert>
 
 FrameManager* FrameManager::ptr=NULL;
 
@@ -182,7 +183,7 @@ FrameManager::StartSubframe (void)
    * will be called for each sub-frame.
    * (RBs allocation)
    */
-  ResourceAllocation();
+  CentralResourceAllocation();
   Simulator::Init()->Schedule(0.001,
 							  &FrameManager::StopSubframe,
 							  this);
@@ -320,4 +321,25 @@ FrameManager::ResourceAllocation(void)
   			}
   		}
   	}
+}
+
+
+void
+FrameManager::CentralResourceAllocation(void)
+{
+  std::vector<ENodeB*> *enodebs = GetNetworkManager ()->GetENodeBContainer ();
+  std::vector<ENodeB*>::iterator iter;
+  ENodeB *record;
+  assert(GetFrameStructure() == FrameManager::FRAME_STRUCTURE_FDD);
+  for (iter = enodebs->begin (); iter != enodebs->end (); iter++)
+	{
+	  record = *iter;
+
+#ifdef FRAME_MANAGER_DEBUG
+	  std::cout << "Central Resource Allocation for eNB " <<
+		  record->GetIDNetworkNode() << std::endl;
+#endif
+
+		Simulator::Init()->Schedule(0.0, &ENodeB::ResourceBlocksAllocation,record);
+	}
 }

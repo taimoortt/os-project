@@ -66,17 +66,21 @@ Interference::ComputeInterference (UserEquipment *ue)
           rsrp[node->GetIDNetworkNode()] = nodeInterference;
           if (node->GetIDNetworkNode() != ue->GetTargetNode()->GetIDNetworkNode()) {
             tot_interference += nodeInterference;
+            #ifdef INTERFERENCE_DEBUG
             std::cerr << tti << " UE(" << ue->GetIDNetworkNode() << ")"
               << " interference from eNB " << node->GetIDNetworkNode()
 				      // << " " << powerTXForSubBandwidth << " "  << ComputePathLossForInterference (node, ue)
 				      << ": " << nodeInterference_db << " interfere(watt): " << nodeInterference
 				      << std::endl;
+            #endif
           }
           else {
+            #ifdef INTERFERENCE_DEBUG
             std::cout << tti << " UE(" << ue->GetIDNetworkNode() << ")"
               << " RSRP from serving eNB " << node->GetIDNetworkNode()
               << ": " << nodeInterference_db << " RSRP(watt): " << nodeInterference
               << std::endl;
+            #endif
           }
 	    }
     }
