@@ -118,6 +118,7 @@ public:
 	void ResourceAllocation(void);
 
   void CentralResourceAllocation(void);
+  void CentralDownlinkRBsAllocation(void);
 };
 
 #endif /* FRAMEMANAGER_H_ */

@@ -105,7 +105,7 @@ public:
 
     void ResourceBlocksAllocation ();
     void UplinkResourceBlockAllocation ();
-    void DownlinkResourceBlokAllocation ();
+    void DownlinkResourceBlockAllocation ();
 
 	//Debug
 	void Print (void);

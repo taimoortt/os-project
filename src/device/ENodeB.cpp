@@ -397,7 +397,7 @@ ENodeB::GetULScheduler (void) const
 void
 ENodeB::ResourceBlocksAllocation (void)
 {
-  DownlinkResourceBlokAllocation ();
+  DownlinkResourceBlockAllocation ();
   UplinkResourceBlockAllocation ();
 }
 
@@ -411,7 +411,7 @@ ENodeB::UplinkResourceBlockAllocation (void)
 }
 
 void
-ENodeB::DownlinkResourceBlokAllocation (void)
+ENodeB::DownlinkResourceBlockAllocation (void)
 {
   if (GetDLScheduler () != NULL && GetNbOfUserEquipmentRecords () > 0)
    {

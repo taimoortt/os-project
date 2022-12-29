@@ -61,7 +61,7 @@ static bool _channel_AWGN_ = false;
 //#define RLC_DEBUG
 //#define MAC_QUEUE_DEBUG
 //#define FLOW_MANAGER_DEBUG
-//#define FRAME_MANAGER_DEBUG
+#define FRAME_MANAGER_DEBUG
 //#define ENODEB_DEBUG
 //#define UE_DEBUG
 //#define PHY_DEBUG

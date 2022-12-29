@@ -25,6 +25,7 @@
 #include "../load-parameters.h"
 #include "../device/ENodeB.h"
 #include "../device/HeNodeB.h"
+#include "../protocolStack/mac/packet-scheduler/packet-scheduler.h"
 #include <cassert>
 
 FrameManager* FrameManager::ptr=NULL;
@@ -183,7 +184,7 @@ FrameManager::StartSubframe (void)
    * will be called for each sub-frame.
    * (RBs allocation)
    */
-  CentralResourceAllocation();
+  Simulator::Init()->Schedule(0, &FrameManager::CentralResourceAllocation, this);
   Simulator::Init()->Schedule(0.001,
 							  &FrameManager::StopSubframe,
 							  this);
@@ -251,8 +252,8 @@ FrameManager::ResourceAllocation(void)
 			  std::cout << " FRAME_MANAGER_DEBUG: SubFrameType = "
 				  "	SUBFRAME_FOR_DOWNLINK " << std::endl;
 #endif
-			  //record->DownlinkResourceBlokAllocation();
-			  Simulator::Init()->Schedule(0.0, &ENodeB::DownlinkResourceBlokAllocation,record);
+			  //record->DownlinkResourceBlockAllocation();
+			  Simulator::Init()->Schedule(0.0, &ENodeB::DownlinkResourceBlockAllocation,record);
 			}
 		  else if(GetSubFrameType (GetNbSubframes ()) == 1)
 			{
@@ -300,8 +301,8 @@ FrameManager::ResourceAllocation(void)
   			  std::cout << " FRAME_MANAGER_DEBUG: SubFrameType = "
   				  "	SUBFRAME_FOR_DOWNLINK " << std::endl;
   #endif
-  			  //record_2->DownlinkResourceBlokAllocation();
-  			  Simulator::Init()->Schedule(0.0, &ENodeB::DownlinkResourceBlokAllocation,record_2);
+  			  //record_2->DownlinkResourceBlockAllocation();
+  			  Simulator::Init()->Schedule(0.0, &ENodeB::DownlinkResourceBlockAllocation,record_2);
   			}
   		  else if(GetSubFrameType (GetNbSubframes ()) == 1)
   			{
@@ -328,18 +329,33 @@ void
 FrameManager::CentralResourceAllocation(void)
 {
   std::vector<ENodeB*> *enodebs = GetNetworkManager ()->GetENodeBContainer ();
-  std::vector<ENodeB*>::iterator iter;
-  ENodeB *record;
   assert(GetFrameStructure() == FrameManager::FRAME_STRUCTURE_FDD);
-  for (iter = enodebs->begin (); iter != enodebs->end (); iter++)
-	{
-	  record = *iter;
-
 #ifdef FRAME_MANAGER_DEBUG
-	  std::cout << "Central Resource Allocation for eNB " <<
-		  record->GetIDNetworkNode() << std::endl;
-#endif
-
-		Simulator::Init()->Schedule(0.0, &ENodeB::ResourceBlocksAllocation,record);
+	std::cout << "Central Resource Allocation for eNB:";
+  for (auto iter = enodebs->begin (); iter != enodebs->end (); iter++) {
+	  ENodeB* enb = *iter;
+    std::cout << " " << enb->GetIDNetworkNode();
 	}
+  std::cout << std::endl;
+#endif
+  // CentralDownlinkRBsAllocation();
+  for (auto iter = enodebs->begin (); iter != enodebs->end (); iter++)
+	{
+	  ENodeB* enb = *iter;
+    enb->DownlinkResourceBlockAllocation();
+    enb->UplinkResourceBlockAllocation();
+	}
+}
+
+void
+FrameManager::CentralDownlinkRBsAllocation(void)
+{
+  std::vector<ENodeB*> *enodebs = GetNetworkManager ()->GetENodeBContainer ();
+  for (auto it = enodebs->begin(); it != enodebs->end(); it++) {
+    ENodeB* enb = *it;
+    PacketScheduler* scheduler = enb->GetDLScheduler();
+    if (scheduler != NULL && enb->GetNbOfUserEquipmentRecords() > 0) {
+      scheduler->Schedule();
+    }
+  }
 }
