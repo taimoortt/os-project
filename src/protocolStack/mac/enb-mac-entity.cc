@@ -156,17 +156,15 @@ EnbMacEntity::ReceiveCqiWithMuteIdealControlMessage(CqiWithMuteIdealControlMessa
 
   if (record != NULL) {
     std::vector<CQIRecord> cqi_with_mute_feedback;
+    std::vector<int> cqi_feedback;
     for (auto it = cqi->begin(); it != cqi->end(); it++) {
       cqi_with_mute_feedback.emplace_back(
         it->m_cqi, it->m_cqi_with_mute, it->m_neighbor_cell
       );
+      cqi_feedback.push_back(it->m_cqi);
     }
-
-    // std::vector<int> cqiFeedback;
-    // for (auto it = cqi->begin (); it != cqi->end (); it++) {
-	  //   cqiFeedback.push_back ((*it).m_cqi);
-    // }
-    // record->SetCQI (cqiFeedback);
+    record->SetCQIWithMute(cqi_with_mute_feedback);
+    record->SetCQI(cqi_feedback);
   }
   else {
     std::cout << "ERROR: received cqi from unknow ue!"<< std::endl;
