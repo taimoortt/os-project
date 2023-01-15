@@ -27,6 +27,16 @@
 
 class NetworkNode;
 
+struct CQIRecord {
+  double sinr;
+  double sinr_with_mute;
+  int neighbor_cell;  // if neighbor_cell is -1, we don't mute
+
+  CQIRecord(double _sinr, double _sinr_with_mute, int _neighbor_cell)
+  : sinr(_sinr), sinr_with_mute(_sinr_with_mute),
+    neighbor_cell(_neighbor_cell) {}
+};
+
 class CqiManager {
 public:
 
@@ -55,6 +65,7 @@ public:
 	long int GetLastSent (void);
 
 	virtual void CreateCqiFeedbacks (std::vector<double> sinr) = 0;
+  virtual void CreateCqiFeedbacks (std::vector<CQIRecord> cqi_records) = 0;
 
 	bool NeedToSendFeedbacks (void);
 

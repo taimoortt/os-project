@@ -28,7 +28,7 @@
 
 
 /* path */
-static std::string path ("/home/alvin/Research/SmallCell/lte-sim-dev/");
+static std::string path ("/home/alvin/Research/SmallCell/MultiCell/");
 
 
 /* tracing */
@@ -78,7 +78,7 @@ static bool _channel_AWGN_ = false;
 //#define TEST_PROPAGATION_LOSS_MODEL
 #define INTERFERENCE_DEBUG
 //#define TEST_CQI_FEEDBACKS
-#define SCHEDULER_DEBUG
+//#define SCHEDULER_DEBUG
 //#define AMC_MAPPING
 //#define PLOT_USER_POSITION
 //#define TEST_UL_SINR

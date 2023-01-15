@@ -26,6 +26,7 @@
 #include "lte-phy.h"
 #include <vector>
 #include <map>
+#include "../device/CqiManager/cqi-manager.h"
 
 class IdealControlMessage;
 
@@ -39,7 +40,8 @@ public:
 	virtual void StartTx (PacketBurst* p);
 	virtual void StartRx (PacketBurst* p, TransmittedSignal* txSignal);
 
-	void CreateCqiFeedbacks (std::vector<double> sinr, std::map<int, double> rsrp);
+	void CreateCqiFeedbacks (std::vector<double> sinr);
+  void CreateCqiFeedbacks (std::vector<CQIRecord> sinr);
 
 	virtual void SendIdealControlMessage (IdealControlMessage *msg);
 	virtual void ReceiveIdealControlMessage (IdealControlMessage *msg);

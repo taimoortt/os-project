@@ -145,6 +145,33 @@ EnbMacEntity::ReceiveCqiIdealControlMessage  (CqiIdealControlMessage* msg)
   //delete msg;
 }
 
+void
+EnbMacEntity::ReceiveCqiWithMuteIdealControlMessage(CqiWithMuteIdealControlMessage* msg)
+{
+  CqiWithMuteIdealControlMessage::CqiFeedbacks *cqi = msg->GetMessage ();
+
+  UserEquipment* ue = (UserEquipment*) msg->GetSourceDevice ();
+  ENodeB* enb = (ENodeB*) GetDevice ();
+  ENodeB::UserEquipmentRecord* record = enb->GetUserEquipmentRecord (ue->GetIDNetworkNode ());
+
+  if (record != NULL) {
+    std::vector<CQIRecord> cqi_with_mute_feedback;
+    for (auto it = cqi->begin(); it != cqi->end(); it++) {
+      cqi_with_mute_feedback.emplace_back(
+        it->m_cqi, it->m_cqi_with_mute, it->m_neighbor_cell
+      );
+    }
+
+    // std::vector<int> cqiFeedback;
+    // for (auto it = cqi->begin (); it != cqi->end (); it++) {
+	  //   cqiFeedback.push_back ((*it).m_cqi);
+    // }
+    // record->SetCQI (cqiFeedback);
+  }
+  else {
+    std::cout << "ERROR: received cqi from unknow ue!"<< std::endl;
+  }
+}
 
 void
 EnbMacEntity::SendPdcchMapIdealControlMessage  (PdcchMapIdealControlMessage* msg)

@@ -25,6 +25,7 @@
 #include "../load-parameters.h"
 #include "../device/ENodeB.h"
 #include "../device/HeNodeB.h"
+#include "../protocolStack/mac/packet-scheduler/downlink-packet-scheduler.h"
 #include "../protocolStack/mac/packet-scheduler/packet-scheduler.h"
 #include <cassert>
 
@@ -350,12 +351,34 @@ FrameManager::CentralResourceAllocation(void)
 void
 FrameManager::CentralDownlinkRBsAllocation(void)
 {
-  std::vector<ENodeB*> *enodebs = GetNetworkManager ()->GetENodeBContainer ();
+  std::vector<ENodeB*> *enodebs =
+    GetNetworkManager ()->GetENodeBContainer ();
+  std::vector<DownlinkPacketScheduler*> schedulers;
+  int nb_of_rbs = 0;
+  // initialization
   for (auto it = enodebs->begin(); it != enodebs->end(); it++) {
     ENodeB* enb = *it;
-    PacketScheduler* scheduler = enb->GetDLScheduler();
-    if (scheduler != NULL && enb->GetNbOfUserEquipmentRecords() > 0) {
-      scheduler->Schedule();
+    DownlinkPacketScheduler* scheduler =
+      (DownlinkPacketScheduler*)enb->GetDLScheduler();
+    assert(scheduler != NULL);
+    scheduler->UpdateAverageTransmissionRate();
+    scheduler->SelectFlowsToSchedule();
+    schedulers.push_back(scheduler);
+  }
+  int nb_of_cells = schedulers.size();
+  for (int i = 0; i < nb_of_rbs; i++) {
+    std::vector<std::vector<int>> metrics;
+    for (int j = 0; j < schedulers.size(); j++) {
+      metrics.emplace_back();
+      FlowsToSchedule* flows = schedulers[j]->GetFlowsToSchedule();
+      for (int m = 0; m < flows->size(); m++) {
+        metrics[j].push_back(
+          schedulers[j]->ComputeSchedulingMetric(
+            flows->at(j)->GetBearer(),
+            flows->at(j)->GetSpectralEfficiency().at(i),
+            i) );
+      }
+      // TBC: 
     }
   }
 }

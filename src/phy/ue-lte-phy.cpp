@@ -125,6 +125,7 @@ UeLtePhy::StartRx (PacketBurst* p, TransmittedSignal* txSignal)
 #endif
 
   m_measuredSinr.clear();
+  std::vector<CQIRecord> cqi_report;
 
   //COMPUTE THE SINR
   std::vector<double> rxSignalValues;
@@ -136,6 +137,7 @@ UeLtePhy::StartRx (PacketBurst* p, TransmittedSignal* txSignal)
   std::map<int, double> rsrp;
   double tot_interference_watt = 0;
   double neighbor_rsrp = -std::numeric_limits<double>::infinity();
+  int neighbor_cell_id = -1;
   UserEquipment* ue = (UserEquipment*)GetDevice();
   if (GetInterference () != NULL) {
     rsrp = GetInterference ()->ComputeInterference (ue);
@@ -148,28 +150,42 @@ UeLtePhy::StartRx (PacketBurst* p, TransmittedSignal* txSignal)
       double cell_rsrp = 10. * log10(it->second);
       if (neighbor_rsrp < cell_rsrp)
         neighbor_rsrp = cell_rsrp;
+        neighbor_cell_id = it->first;
     }
   }
 
   double noise_interference = 10. * log10 (pow(10., NOISE/10) + tot_interference_watt); // dB
+  double noise_interference_with_mute = 10. * log10(
+      pow(10., NOISE/10) + tot_interference_watt - 
+      pow(10., neighbor_rsrp/10));
   double avg_rsrp = 0;
   double avg_sinr = 0;
 
-  for (it = rxSignalValues.begin(); it != rxSignalValues.end(); it++)
-    {
-      double power; // power transmission for the current sub channel [dB]
-      if ((*it) != 0.)
-        {
-          power = (*it);
-        }
-      else
-        {
-          power = 0.;
-        }
-      m_measuredSinr.push_back (power - noise_interference);
-      avg_rsrp += power;
-      avg_sinr += (power - noise_interference);
+  for (it = rxSignalValues.begin(); it != rxSignalValues.end(); it++) {
+    double power; // power transmission for the current sub channel [dB]
+    if ((*it) != 0.) {
+      power = (*it);
     }
+    else {
+      power = 0.;
+    }
+    m_measuredSinr.push_back (power - noise_interference);
+    avg_rsrp += power;
+    avg_sinr += (power - noise_interference);
+    // cqi report with muting information
+    if (power - neighbor_rsrp < 3) {
+      cqi_report.emplace_back(
+        power - noise_interference,
+        power - noise_interference_with_mute,
+        neighbor_cell_id
+        );
+    }
+    else {
+      cqi_report.emplace_back(
+        power - noise_interference,
+        0, -1);
+    }
+  }
   avg_rsrp /= rxSignalValues.size();
   avg_sinr /= rxSignalValues.size();
 
@@ -187,12 +203,11 @@ UeLtePhy::StartRx (PacketBurst* p, TransmittedSignal* txSignal)
   if (GetErrorModel() != NULL && m_channelsForRx.size () > 0)
     {
 	  std::vector<int> cqi_;
-	  for (int i = 0; i < m_mcsIndexForRx.size (); i++)
-	    {
+	  for (int i = 0; i < m_mcsIndexForRx.size (); i++) {
 		  AMCModule *amc = GetDevice ()->GetProtocolStack ()->GetMacEntity ()->GetAmcModule ();
 		  int cqi =  amc->GetCQIFromMCS (m_mcsIndexForRx.at (i));
 		  cqi_.push_back (cqi);
-	    }
+	  }
 	  phyError = GetErrorModel ()->CheckForPhysicalError (m_channelsForRx, cqi_, m_measuredSinr);
 
 	  if (_PHY_TRACING_)
@@ -232,7 +247,8 @@ UeLtePhy::StartRx (PacketBurst* p, TransmittedSignal* txSignal)
     }
 
   //CQI report
-  CreateCqiFeedbacks (m_measuredSinr, rsrp);
+  // CreateCqiFeedbacks (m_measuredSinr);
+  CreateCqiFeedbacks(cqi_report);
 
   m_channelsForRx.clear ();
   m_channelsForTx.clear ();
@@ -244,8 +260,7 @@ UeLtePhy::StartRx (PacketBurst* p, TransmittedSignal* txSignal)
 }
 
 void
-UeLtePhy::CreateCqiFeedbacks (std::vector<double> sinr,
-  std::map<int, double> rsrp)
+UeLtePhy::CreateCqiFeedbacks (std::vector<double> sinr)
 {
   UserEquipment* thisNode = (UserEquipment*) GetDevice ();
   if (thisNode->GetCqiManager ()->NeedToSendFeedbacks ())
@@ -254,6 +269,14 @@ UeLtePhy::CreateCqiFeedbacks (std::vector<double> sinr,
     }
 }
 
+void
+UeLtePhy::CreateCqiFeedbacks (std::vector<CQIRecord> record)
+{
+  UserEquipment* thisNode = (UserEquipment*) GetDevice ();
+  if (thisNode->GetCqiManager ()->NeedToSendFeedbacks ()) {
+    thisNode->GetCqiManager ()->CreateCqiFeedbacks (record);
+  }
+}
 
 void
 UeLtePhy::SendIdealControlMessage (IdealControlMessage *msg)

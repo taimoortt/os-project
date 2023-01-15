@@ -189,18 +189,22 @@ EnbLtePhy::ReceiveIdealControlMessage (IdealControlMessage *msg)
 #endif
 
   //RECEIVE CQI FEEDBACKS
-  if (msg->GetMessageType () == IdealControlMessage::CQI_FEEDBACKS)
-    {
-	  CqiIdealControlMessage *cqiMsg = (CqiIdealControlMessage*) msg;
-	  EnbMacEntity *mac = (EnbMacEntity*) GetDevice ()->GetProtocolStack ()->GetMacEntity ();
-      mac->ReceiveCqiIdealControlMessage (cqiMsg);
-    }
-  if (msg->GetMessageType () == IdealControlMessage::SCHEDULING_REQUEST)
-    {
+  if (msg->GetMessageType () == IdealControlMessage::CQI_FEEDBACKS) {
+	  CqiIdealControlMessage* cqiMsg = (CqiIdealControlMessage*) msg;
+	  EnbMacEntity* mac = (EnbMacEntity*) GetDevice ()->GetProtocolStack ()->GetMacEntity ();
+    mac->ReceiveCqiIdealControlMessage (cqiMsg);
+  }
+  else if (msg->GetMessageType() == IdealControlMessage::CQI_WITH_MUTE_FEEDBACKS) {
+    CqiWithMuteIdealControlMessage *cqi_msg = (CqiWithMuteIdealControlMessage*) msg;
+    EnbMacEntity* mac = (EnbMacEntity*) GetDevice()->GetProtocolStack()->GetMacEntity();
+    mac->ReceiveCqiWithMuteIdealControlMessage (cqi_msg);
+  }
+
+  if (msg->GetMessageType () == IdealControlMessage::SCHEDULING_REQUEST) {
 	  SchedulingRequestIdealControlMessage *srMsg = (SchedulingRequestIdealControlMessage*) msg;
 	  EnbMacEntity *mac = (EnbMacEntity*) GetDevice ()->GetProtocolStack ()->GetMacEntity ();
 	  mac->ReceiveSchedulingRequestIdealControlMessage (srMsg);
-    }
+  }
 }
 
 void

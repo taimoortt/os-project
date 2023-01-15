@@ -31,6 +31,41 @@ class PacketBurst;
 class Packet;
 class RadioBearer;
 
+struct FlowToSchedule
+{
+  FlowToSchedule(RadioBearer* bearer,
+      int dataToTransmit);
+  virtual ~FlowToSchedule();
+  RadioBearer* m_bearer;
+  int m_allocatedBits;		//bits
+  int m_transmittedData;	//bytes
+  int m_dataToTransmit;		//bytes
+
+  std::vector<double> m_spectralEfficiency;
+  std::vector<int> m_listOfAllocatedRBs;
+  std::vector<int> m_listOfSelectedMCS;
+  std::vector<int> m_cqiFeedbacks;
+
+  RadioBearer* GetBearer (void);
+
+  void UpdateAllocatedBits (int allocatedBits);
+  int GetAllocatedBits (void) const;
+  int GetTransmittedData (void) const;
+  void SetDataToTransmit (int dataToTransmit);
+  int GetDataToTransmit (void) const;
+
+  void SetSpectralEfficiency (std::vector<double> s);
+  std::vector<double> GetSpectralEfficiency (void);
+
+  std::vector<int>* GetListOfAllocatedRBs ();
+  std::vector<int>* GetListOfSelectedMCS ();
+
+  void SetCqiFeedbacks (std::vector<int> cqiFeedbacks);
+  std::vector<int> GetCqiFeedbacks (void);
+};
+
+typedef std::vector<FlowToSchedule*> FlowsToSchedule;
+
 class PacketScheduler {
 public:
 	PacketScheduler();
@@ -46,41 +81,6 @@ public:
 
 	void StopSchedule ();
 	virtual void DoStopSchedule ();
-
-	struct FlowToSchedule
-	  {
-	    FlowToSchedule(RadioBearer* bearer,
-		  		       int dataToTransmit);
-	    virtual ~FlowToSchedule();
-	    RadioBearer* m_bearer;
-	    int m_allocatedBits;		//bits
-	    int m_transmittedData;	//bytes
-	    int m_dataToTransmit;		//bytes
-
-	    std::vector<double> m_spectralEfficiency;
-	    std::vector<int> m_listOfAllocatedRBs;
-	    std::vector<int> m_listOfSelectedMCS;
-	    std::vector<int> m_cqiFeedbacks;
-
-		RadioBearer* GetBearer (void);
-
-		void UpdateAllocatedBits (int allocatedBits);
-		int GetAllocatedBits (void) const;
-		int GetTransmittedData (void) const;
-		void SetDataToTransmit (int dataToTransmit);
-		int GetDataToTransmit (void) const;
-
-		void SetSpectralEfficiency (std::vector<double> s);
-		std::vector<double> GetSpectralEfficiency (void);
-
-		std::vector<int>* GetListOfAllocatedRBs ();
-		std::vector<int>* GetListOfSelectedMCS ();
-
-		void SetCqiFeedbacks (std::vector<int> cqiFeedbacks);
-		std::vector<int> GetCqiFeedbacks (void);
-	  };
-
-	typedef std::vector<FlowToSchedule*> FlowsToSchedule;
 
 	void CreateFlowsToSchedule (void);
 	void DeleteFlowsToSchedule (void);

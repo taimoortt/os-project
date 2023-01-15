@@ -249,6 +249,18 @@ ENodeB::UserEquipmentRecord::GetCQI (void) const
  return m_cqiFeedback;
 }
 
+void
+ENodeB::UserEquipmentRecord::SetCQIWithMute (std::vector<CQIRecord> cqi)
+{
+  m_cqiWithMuteFeedback = cqi;
+}
+
+std::vector<CQIRecord>
+ENodeB::UserEquipmentRecord::GetCQIWithMute (void) const
+{
+ return m_cqiWithMuteFeedback;
+}
+
 int
 ENodeB::UserEquipmentRecord::GetSchedulingRequest (void)
 {

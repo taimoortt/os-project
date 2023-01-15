@@ -86,7 +86,7 @@ PacketScheduler::DoStopSchedule ()
 {}
 
 
-PacketScheduler::FlowToSchedule::FlowToSchedule(RadioBearer* bearer, int dataToTransmit)
+FlowToSchedule::FlowToSchedule(RadioBearer* bearer, int dataToTransmit)
 {
   m_bearer = bearer;
   m_allocatedBits = 0;
@@ -94,7 +94,7 @@ PacketScheduler::FlowToSchedule::FlowToSchedule(RadioBearer* bearer, int dataToT
   m_dataToTransmit = dataToTransmit;
 }
 
-PacketScheduler::FlowToSchedule::~FlowToSchedule()
+FlowToSchedule::~FlowToSchedule()
 {}
 
 void
@@ -110,7 +110,7 @@ PacketScheduler::DeleteFlowsToSchedule (void)
   delete  m_flowsToSchedule;
 }
 
-PacketScheduler::FlowsToSchedule*
+FlowsToSchedule*
 PacketScheduler::GetFlowsToSchedule (void) const
 {
   return m_flowsToSchedule;
@@ -131,25 +131,25 @@ PacketScheduler::ClearFlowsToSchedule ()
 }
 
 RadioBearer*
-PacketScheduler::FlowToSchedule::GetBearer (void)
+FlowToSchedule::GetBearer (void)
 {
   return m_bearer;
 }
 
 void
-PacketScheduler::FlowToSchedule::SetSpectralEfficiency (std::vector<double> s)
+FlowToSchedule::SetSpectralEfficiency (std::vector<double> s)
 {
   m_spectralEfficiency = s;
 }
 
 std::vector<double>
-PacketScheduler::FlowToSchedule::GetSpectralEfficiency (void)
+FlowToSchedule::GetSpectralEfficiency (void)
 {
   return m_spectralEfficiency;
 }
 
 void
-PacketScheduler::FlowToSchedule::UpdateAllocatedBits (int allocatedBits)
+FlowToSchedule::UpdateAllocatedBits (int allocatedBits)
 {
   m_allocatedBits += allocatedBits;
   int availableBytes = m_allocatedBits/8;
@@ -165,49 +165,49 @@ PacketScheduler::FlowToSchedule::UpdateAllocatedBits (int allocatedBits)
 }
 
 int
-PacketScheduler::FlowToSchedule::GetAllocatedBits (void) const
+FlowToSchedule::GetAllocatedBits (void) const
 {
   return m_allocatedBits;
 }
 
 int
-PacketScheduler::FlowToSchedule::GetTransmittedData (void) const
+FlowToSchedule::GetTransmittedData (void) const
 {
   return m_transmittedData;
 }
 
 void
-PacketScheduler::FlowToSchedule::SetDataToTransmit (int dataToTransmit)
+FlowToSchedule::SetDataToTransmit (int dataToTransmit)
 {
   m_dataToTransmit = dataToTransmit;
 }
 
 int
-PacketScheduler::FlowToSchedule::GetDataToTransmit (void) const
+FlowToSchedule::GetDataToTransmit (void) const
 {
   return m_dataToTransmit;
 }
 
 std::vector<int>*
-PacketScheduler::FlowToSchedule::GetListOfAllocatedRBs ()
+FlowToSchedule::GetListOfAllocatedRBs ()
 {
   return &m_listOfAllocatedRBs;
 }
 
 std::vector<int>*
-PacketScheduler::FlowToSchedule::GetListOfSelectedMCS ()
+FlowToSchedule::GetListOfSelectedMCS ()
 {
   return &m_listOfSelectedMCS;
 }
 
 void
-PacketScheduler::FlowToSchedule::SetCqiFeedbacks (std::vector<int> cqiFeedbacks)
+FlowToSchedule::SetCqiFeedbacks (std::vector<int> cqiFeedbacks)
 {
   m_cqiFeedbacks = cqiFeedbacks;
 }
 
 std::vector<int>
-PacketScheduler::FlowToSchedule::GetCqiFeedbacks (void)
+FlowToSchedule::GetCqiFeedbacks (void)
 {
   return m_cqiFeedbacks;
 }

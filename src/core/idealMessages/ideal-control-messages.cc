@@ -152,7 +152,39 @@ CqiIdealControlMessage::GetMessage (void)
   return m_cqiFeedbacks;
 }
 
+CqiWithMuteIdealControlMessage::CqiWithMuteIdealControlMessage (void)
+{
+  m_cqiFeedbacks = new CqiFeedbacks ();
+  SetMessageType (IdealControlMessage::CQI_WITH_MUTE_FEEDBACKS);
+}
 
+
+CqiWithMuteIdealControlMessage::~CqiWithMuteIdealControlMessage (void)
+{
+  m_cqiFeedbacks->clear ();
+  delete m_cqiFeedbacks;
+}
+
+
+void
+CqiWithMuteIdealControlMessage::AddNewRecord (int subChannel, double cqi,
+  double cqi_with_mute, int neighbor_cell)
+{
+  CqiFeedback c;
+  c.m_idSubChannel = subChannel;
+  c.m_cqi = cqi;
+  c.m_cqi_with_mute = cqi_with_mute;
+  c.m_neighbor_cell = neighbor_cell;
+
+  m_cqiFeedbacks->push_back (c);
+}
+
+
+CqiWithMuteIdealControlMessage::CqiFeedbacks*
+CqiWithMuteIdealControlMessage::GetMessage (void)
+{
+  return m_cqiFeedbacks;
+}
 
 // ----------------------------------------------------------------------------------------------------------
 

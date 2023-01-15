@@ -33,6 +33,7 @@
 
 class PacketScheduler;
 class CqiIdealControlMessage;
+class CqiWithMuteIdealControlMessage;
 class PdcchMapIdealControlMessage;
 class SchedulingRequestIdealControlMessage;
 
@@ -50,6 +51,7 @@ public:
   PacketScheduler* GetDownlinkPacketScheduler (void);
 
   void ReceiveCqiIdealControlMessage  (CqiIdealControlMessage* msg);
+  void ReceiveCqiWithMuteIdealControlMessage (CqiWithMuteIdealControlMessage* msg);
   void SendPdcchMapIdealControlMessage  (PdcchMapIdealControlMessage* msg);
   void ReceiveSchedulingRequestIdealControlMessage (SchedulingRequestIdealControlMessage *msg);
 private:
