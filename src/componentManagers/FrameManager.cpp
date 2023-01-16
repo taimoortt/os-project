@@ -339,11 +339,17 @@ FrameManager::CentralResourceAllocation(void)
 	}
   std::cout << std::endl;
 #endif
-  // CentralDownlinkRBsAllocation();
-  for (auto iter = enodebs->begin (); iter != enodebs->end (); iter++)
-	{
+
+#ifdef SET_CENTRAL_SCHEDULER
+  CentralDownlinkRBsAllocation();
+#else
+for (auto iter = enodebs->begin (); iter != enodebs->end (); iter++) {
 	  ENodeB* enb = *iter;
     enb->DownlinkResourceBlockAllocation();
+	}
+#endif
+  for (auto iter = enodebs->begin (); iter != enodebs->end (); iter++) {
+	  ENodeB* enb = *iter;
     enb->UplinkResourceBlockAllocation();
 	}
 }
@@ -367,11 +373,12 @@ FrameManager::CentralDownlinkRBsAllocation(void)
   }
   int nb_of_cells = schedulers.size();
   for (int i = 0; i < nb_of_rbs; i++) {
+    // metrics[j][k] is the scheduling metric of the k-th flow in j-th cell
     std::vector<std::vector<int>> metrics;
     for (int j = 0; j < schedulers.size(); j++) {
       metrics.emplace_back();
       FlowsToSchedule* flows = schedulers[j]->GetFlowsToSchedule();
-      for (int m = 0; m < flows->size(); m++) {
+      for (int k = 0; k < flows->size(); k++) {
         metrics[j].push_back(
           schedulers[j]->ComputeSchedulingMetric(
             flows->at(j)->GetBearer(),

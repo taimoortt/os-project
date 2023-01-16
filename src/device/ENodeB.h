@@ -47,9 +47,9 @@ public:
     std::vector<int> m_cqiFeedback;
     std::vector<CQIRecord> m_cqiWithMuteFeedback;
 		void SetCQI (std::vector<int> cqi);
-		std::vector<int> GetCQI (void) const;
+		std::vector<int>& GetCQI (void);
     void SetCQIWithMute (std::vector<CQIRecord> cqi);
-    std::vector<CQIRecord> GetCQIWithMute (void) const;
+    std::vector<CQIRecord>& GetCQIWithMute (void);
 
 		int m_schedulingRequest; // in bytes
 		void SetSchedulingRequest (int r);

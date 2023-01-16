@@ -191,6 +191,7 @@ ENodeB::UserEquipmentRecord::UserEquipmentRecord ()
   m_UE = NULL;
   //Create initial CQI values:
   m_cqiFeedback.clear ();
+  m_cqiWithMuteFeedback.clear();
   m_uplinkChannelStatusIndicator.clear ();
   m_schedulingRequest = 0;
   m_averageSchedulingGrants = 1;
@@ -199,6 +200,7 @@ ENodeB::UserEquipmentRecord::UserEquipmentRecord ()
 ENodeB::UserEquipmentRecord::~UserEquipmentRecord ()
 {
   m_cqiFeedback.clear ();
+  m_cqiWithMuteFeedback.clear();
   m_uplinkChannelStatusIndicator.clear();
 }
 
@@ -209,6 +211,7 @@ ENodeB::UserEquipmentRecord::UserEquipmentRecord (UserEquipment *UE)
 
   int nbRbs = s->GetDlSubChannels ().size ();
   m_cqiFeedback.clear ();
+  m_cqiWithMuteFeedback.clear();
   for (int i = 0; i < nbRbs; i++ )
     {
 	  m_cqiFeedback.push_back (10);
@@ -243,8 +246,8 @@ ENodeB::UserEquipmentRecord::SetCQI (std::vector<int> cqi)
   m_cqiFeedback = cqi;
 }
 
-std::vector<int>
-ENodeB::UserEquipmentRecord::GetCQI (void) const
+std::vector<int>&
+ENodeB::UserEquipmentRecord::GetCQI (void)
 {
  return m_cqiFeedback;
 }
@@ -255,8 +258,8 @@ ENodeB::UserEquipmentRecord::SetCQIWithMute (std::vector<CQIRecord> cqi)
   m_cqiWithMuteFeedback = cqi;
 }
 
-std::vector<CQIRecord>
-ENodeB::UserEquipmentRecord::GetCQIWithMute (void) const
+std::vector<CQIRecord>&
+ENodeB::UserEquipmentRecord::GetCQIWithMute (void)
 {
  return m_cqiWithMuteFeedback;
 }

@@ -25,6 +25,7 @@
 #include "../../packet/Packet.h"
 #include "../../packet/packet-burst.h"
 #include "../../../device/NetworkNode.h"
+#include "../../../device/CqiManager/cqi-manager.h"
 #include "../../../flows/radio-bearer.h"
 #include "../../../protocolStack/rrc/rrc-entity.h"
 #include "../../../flows/application/Application.h"
@@ -201,19 +202,42 @@ FlowToSchedule::GetListOfSelectedMCS ()
 }
 
 void
-FlowToSchedule::SetCqiFeedbacks (std::vector<int> cqiFeedbacks)
+FlowToSchedule::SetCqiFeedbacks (std::vector<int>& cqiFeedbacks)
 {
   m_cqiFeedbacks = cqiFeedbacks;
 }
 
-std::vector<int>
+std::vector<int>&
 FlowToSchedule::GetCqiFeedbacks (void)
 {
   return m_cqiFeedbacks;
 }
 
 void
-PacketScheduler::InsertFlowToSchedule (RadioBearer* bearer, int dataToTransmit, std::vector<double> specEff, std::vector<int> cqiFeedbacks)
+FlowToSchedule::SetCqiWithMuteFeedbacks (std::vector<CQIRecord>& cqiFeedbacks)
+{
+  m_cqiWithMuteFeedbacks = cqiFeedbacks;
+}
+
+std::vector<CQIRecord>&
+FlowToSchedule::GetCqiWithMuteFeedbacks (void)
+{
+  return m_cqiWithMuteFeedbacks;
+}
+
+bool
+FlowToSchedule::IsMuteRequested(int rb_id)
+{
+  if (m_cqiWithMuteFeedbacks.size() == 0)
+    return false;
+  else
+    return m_cqiWithMuteFeedbacks.at(rb_id).neighbor_cell != -1;
+}
+
+void
+PacketScheduler::InsertFlowToSchedule (RadioBearer* bearer, int dataToTransmit,
+  std::vector<double> specEff, std::vector<int>& cqiFeedbacks,
+  std::vector<CQIRecord>& cqiWithMuteFeedbacks)
 {
 #ifdef SCHEDULER_DEBUG
 	std::cout << "\t  --> selected flow: "
@@ -224,6 +248,7 @@ PacketScheduler::InsertFlowToSchedule (RadioBearer* bearer, int dataToTransmit, 
   FlowToSchedule *flowToSchedule = new FlowToSchedule(bearer, dataToTransmit);
   flowToSchedule->SetSpectralEfficiency (specEff);
   flowToSchedule->SetCqiFeedbacks (cqiFeedbacks);
+  flowToSchedule->SetCqiWithMuteFeedbacks(cqiWithMuteFeedbacks);
 
   GetFlowsToSchedule ()->push_back(flowToSchedule);
 }

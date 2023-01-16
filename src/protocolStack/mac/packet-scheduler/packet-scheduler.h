@@ -45,6 +45,7 @@ struct FlowToSchedule
   std::vector<int> m_listOfAllocatedRBs;
   std::vector<int> m_listOfSelectedMCS;
   std::vector<int> m_cqiFeedbacks;
+  std::vector<CQIRecord> m_cqiWithMuteFeedbacks;
 
   RadioBearer* GetBearer (void);
 
@@ -60,8 +61,12 @@ struct FlowToSchedule
   std::vector<int>* GetListOfAllocatedRBs ();
   std::vector<int>* GetListOfSelectedMCS ();
 
-  void SetCqiFeedbacks (std::vector<int> cqiFeedbacks);
-  std::vector<int> GetCqiFeedbacks (void);
+  void SetCqiFeedbacks (std::vector<int>& cqiFeedbacks);
+  std::vector<int>& GetCqiFeedbacks (void);
+  void SetCqiWithMuteFeedbacks(std::vector<CQIRecord>& cqi_withmute_feedbacks);
+  std::vector<CQIRecord>& GetCqiWithMuteFeedbacks(void);
+
+  bool IsMuteRequested(int i);
 };
 
 typedef std::vector<FlowToSchedule*> FlowsToSchedule;
@@ -91,7 +96,8 @@ public:
 	void InsertFlowToSchedule (RadioBearer* bearer,
 						       int dataToTransmit,
 						       std::vector<double> specEff,
-						       std::vector<int> cqiFeedbacks);
+						       std::vector<int>& cqiFeedbacks,
+                   std::vector<CQIRecord>& cqiWithMuteFeedbacks);
 
 	void UpdateAllocatedBits (FlowToSchedule* scheduledFlow,
 						      int allocatedBits,

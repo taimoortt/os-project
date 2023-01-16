@@ -77,16 +77,18 @@ void DownlinkPacketScheduler::SelectFlowsToSchedule ()
 		  ENodeB *enb = (ENodeB*) GetMacEntity ()->GetDevice ();
 		  ENodeB::UserEquipmentRecord *ueRecord = enb->GetUserEquipmentRecord (bearer->GetDestination ()->GetIDNetworkNode ());
 		  std::vector<double> spectralEfficiency;
-		  std::vector<int> cqiFeedbacks = ueRecord->GetCQI ();
-		  int numberOfCqi = cqiFeedbacks.size ();
+      std::vector<int>& cqi_feedbacks = ueRecord->GetCQI();
+      std::vector<CQIRecord>& cqi_withmute_feedbacks = ueRecord->GetCQIWithMute();
+		  int numberOfCqi = cqi_feedbacks.size ();
 		  for (int i = 0; i < numberOfCqi; i++)
 			{
-			  double sEff = GetMacEntity ()->GetAmcModule ()->GetEfficiencyFromCQI (cqiFeedbacks.at (i));
+			  double sEff = GetMacEntity ()->GetAmcModule ()->GetEfficiencyFromCQI (cqi_feedbacks.at (i));
 			  spectralEfficiency.push_back (sEff);
 			}
 
 		  //create flow to scheduler record
-		  InsertFlowToSchedule(bearer, dataToTransmit, spectralEfficiency, cqiFeedbacks);
+		  InsertFlowToSchedule(bearer, dataToTransmit,
+        spectralEfficiency, cqi_feedbacks, cqi_withmute_feedbacks);
 		}
 	  else
 	    {}
