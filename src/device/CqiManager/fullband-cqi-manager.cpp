@@ -77,7 +77,7 @@ FullbandCqiManager::CreateCqiFeedbacks (std::vector<double> sinr)
 
 
 void
-FullbandCqiManager::CreateCqiFeedbacks (std::vector<CQIRecord> cqi_record)
+FullbandCqiManager::CreateCqiFeedbacks (std::vector<SinrReport> cqi_record)
 {
   UserEquipment* thisNode = (UserEquipment*) GetDevice ();
   NetworkNode* targetNode = thisNode->GetTargetNode ();

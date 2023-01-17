@@ -41,7 +41,7 @@ public:
 	virtual void StartRx (PacketBurst* p, TransmittedSignal* txSignal);
 
 	void CreateCqiFeedbacks (std::vector<double> sinr);
-  void CreateCqiFeedbacks (std::vector<CQIRecord> sinr);
+  void CreateCqiFeedbacks (std::vector<SinrReport> sinr);
 
 	virtual void SendIdealControlMessage (IdealControlMessage *msg);
 	virtual void ReceiveIdealControlMessage (IdealControlMessage *msg);

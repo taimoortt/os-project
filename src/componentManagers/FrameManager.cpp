@@ -27,7 +27,13 @@
 #include "../device/HeNodeB.h"
 #include "../protocolStack/mac/packet-scheduler/downlink-packet-scheduler.h"
 #include "../protocolStack/mac/packet-scheduler/packet-scheduler.h"
+#include "../protocolStack/mac/AMCModule.h"
+#include "../utility/eesm-effective-sinr.h"
+#include "../flows/radio-bearer.h"
+#include "../flows/application/Application.h"
+#include "../phy/enb-lte-phy.h"
 #include <cassert>
+#include <unordered_set>
 
 FrameManager* FrameManager::ptr=NULL;
 
@@ -361,6 +367,8 @@ FrameManager::CentralDownlinkRBsAllocation(void)
     GetNetworkManager ()->GetENodeBContainer ();
   std::vector<DownlinkPacketScheduler*> schedulers;
   int nb_of_rbs = 0;
+  int nb_of_cells = 0;
+  int cells_with_flow = 0;
   // initialization
   for (auto it = enodebs->begin(); it != enodebs->end(); it++) {
     ENodeB* enb = *it;
@@ -370,22 +378,126 @@ FrameManager::CentralDownlinkRBsAllocation(void)
     scheduler->UpdateAverageTransmissionRate();
     scheduler->SelectFlowsToSchedule();
     schedulers.push_back(scheduler);
+    if (scheduler->GetFlowsToSchedule()->size() != 0) {
+      cells_with_flow += 1;
+    }
   }
-  int nb_of_cells = schedulers.size();
+  nb_of_cells = schedulers.size();
+  
+  std::vector<std::unordered_set<int>> mute_rbs_cells;
   for (int i = 0; i < nb_of_rbs; i++) {
+    mute_rbs_cells.emplace_back();
     // metrics[j][k] is the scheduling metric of the k-th flow in j-th cell
-    std::vector<std::vector<int>> metrics;
+    std::vector<std::vector<double>> metrics;
     for (int j = 0; j < schedulers.size(); j++) {
       metrics.emplace_back();
       FlowsToSchedule* flows = schedulers[j]->GetFlowsToSchedule();
       for (int k = 0; k < flows->size(); k++) {
-        metrics[j].push_back(
-          schedulers[j]->ComputeSchedulingMetric(
-            flows->at(j)->GetBearer(),
-            flows->at(j)->GetSpectralEfficiency().at(i),
-            i) );
+        double metric = schedulers[j]->ComputeSchedulingMetric(
+            flows->at(k)->GetBearer(),
+            flows->at(k)->GetSpectralEfficiency().at(i),
+            i);
+        metrics[j].push_back(metric);
       }
-      // TBC: 
     }
+    std::unordered_set<int> cells_muted;
+    std::unordered_set<int> cells_allocated;
+    while (true) {
+      // allocate i-th rb to a specific flow in a specific cell in greedy
+      // we consider the limited queue of every flow in the future
+      int schedule_cell_id = -1;
+      int schedule_flow_id = -1;
+      double target_metric = -1;
+      FlowToSchedule* schedule_flow = nullptr;
+      for (int j = 0; j < schedulers.size(); j++) {
+        if (cells_muted.find(j) == cells_muted.end() ||
+            cells_allocated.find(j) == cells_allocated.end()) {
+          continue;
+        }
+        FlowsToSchedule* flows = schedulers[j]->GetFlowsToSchedule();
+        for (int k = 0; k < flows->size(); k++) {
+          if (metrics[j][k] > target_metric) {
+            target_metric = metrics[j][k];
+            schedule_cell_id = j;
+            schedule_flow_id = k;
+            schedule_flow = flows->at(k);
+          }
+        }
+      }
+      if (schedule_cell_id == -1) {
+        // all cells are allocated
+        break;
+      }
+      schedule_flow->GetListOfAllocatedRBs()->push_back(i);
+      std::vector<CqiReport>& cqi_with_mute =
+        schedule_flow->GetCqiWithMuteFeedbacks();
+      cells_allocated.insert(schedule_cell_id);
+      int mute_cell_id = cqi_with_mute[i].neighbor_cell;
+      if (mute_cell_id != -1) {
+        // applying RBs muting here
+        if (cells_allocated.find(mute_cell_id) != cells_allocated.end()) {
+          // cannot mute, apply the original cqi
+          cqi_with_mute[i].final_cqi = cqi_with_mute[i].cqi;
+        }
+        else {
+          if (cells_muted.find(mute_cell_id) == cells_muted.end()) {
+            cells_muted.insert(mute_cell_id);
+          }
+          // apply the cqi_with_mute
+          cqi_with_mute[i].final_cqi = cqi_with_mute[i].cqi_with_mute;
+        }
+      }
+      else {
+        // apply the original cqi
+        cqi_with_mute[i].final_cqi = cqi_with_mute[i].cqi;
+      }
+    }
+    for (int j = 0; j < schedulers.size(); j++) {
+      PdcchMapIdealControlMessage *pdcchMsg = new PdcchMapIdealControlMessage ();
+      FlowsToSchedule* flows = schedulers[j]->GetFlowsToSchedule();
+      AMCModule* amc = schedulers[j]->GetMacEntity()->GetAmcModule();
+      for (auto it = flows->begin (); it != flows->end (); it++) {
+        FlowToSchedule *flow = (*it);
+        std::vector<int>* allocated_rbs = flow->GetListOfAllocatedRBs();
+        if (allocated_rbs->size() > 0) {
+          std::vector<double> sinr_values;
+          for(auto it = allocated_rbs->begin(); it != allocated_rbs->end(); it++) {
+            int rb_id = *it;
+            double sinr = amc->GetSinrFromCQI(
+              flow->GetCqiWithMuteFeedbacks().at(rb_id).final_cqi
+            );
+            sinr_values.push_back(sinr);
+          }
+          double effective_sinr = GetEesmEffectiveSinr(sinr_values);
+          int mcs = amc->GetMCSFromCQI(amc->GetCQIFromSinr(effective_sinr));
+          int tbs_size = amc->GetTBSizeFromMCS(mcs, allocated_rbs->size());
+          flow->UpdateAllocatedBits(tbs_size);
+
+#ifdef SCHEDULER_DEBUG
+		      std::cout << "\t\t --> flow "
+            << flow->GetBearer()->GetApplication()->GetApplicationID()
+				    << " has been scheduled:"
+            << " nb_of_RBs: " << flow->GetListOfAllocatedRBs ()->size ()
+            << " effective_sinr: " << effective_sinr
+            << " tbs_size: " << tbs_size
+				    << std::endl;
+#endif
+          for(auto it = allocated_rbs->begin(); it != allocated_rbs->end(); it++) {
+            pdcchMsg->AddNewRecord(
+              PdcchMapIdealControlMessage::DOWNLINK,
+              *it, flow->GetBearer()->GetDestination(), mcs
+              );
+          }
+        }
+      }
+      if (pdcchMsg->GetMessage()->size() > 0) {
+        schedulers[j]->GetMacEntity()->GetDevice()
+          ->GetPhy()->SendIdealControlMessage(pdcchMsg);
+      }
+      delete pdcchMsg;
+    }
+  }
+  for (auto it = schedulers.begin(); it != schedulers.end(); it++) {
+    (*it)->StopSchedule();
   }
 }

@@ -155,7 +155,7 @@ EnbMacEntity::ReceiveCqiWithMuteIdealControlMessage(CqiWithMuteIdealControlMessa
   ENodeB::UserEquipmentRecord* record = enb->GetUserEquipmentRecord (ue->GetIDNetworkNode ());
 
   if (record != NULL) {
-    std::vector<CQIRecord> cqi_with_mute_feedback;
+    std::vector<CqiReport> cqi_with_mute_feedback;
     std::vector<int> cqi_feedback;
     for (auto it = cqi->begin(); it != cqi->end(); it++) {
       cqi_with_mute_feedback.emplace_back(

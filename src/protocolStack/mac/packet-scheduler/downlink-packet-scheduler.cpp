@@ -64,7 +64,8 @@ void DownlinkPacketScheduler::SelectFlowsToSchedule ()
 		{
 		  //compute data to transmit
 		  int dataToTransmit;
-		  if (bearer->GetApplication ()->GetApplicationType () == Application::APPLICATION_TYPE_INFINITE_BUFFER)
+		  if (bearer->GetApplication()->GetApplicationType()
+        == Application::APPLICATION_TYPE_INFINITE_BUFFER)
 			{
 			  dataToTransmit = 100000000;
 			}
@@ -75,14 +76,15 @@ void DownlinkPacketScheduler::SelectFlowsToSchedule ()
 
 		  //compute spectral efficiency
 		  ENodeB *enb = (ENodeB*) GetMacEntity ()->GetDevice ();
-		  ENodeB::UserEquipmentRecord *ueRecord = enb->GetUserEquipmentRecord (bearer->GetDestination ()->GetIDNetworkNode ());
+		  ENodeB::UserEquipmentRecord *ueRecord = enb->GetUserEquipmentRecord(
+        bearer->GetDestination ()->GetIDNetworkNode ());
 		  std::vector<double> spectralEfficiency;
       std::vector<int>& cqi_feedbacks = ueRecord->GetCQI();
-      std::vector<CQIRecord>& cqi_withmute_feedbacks = ueRecord->GetCQIWithMute();
+      std::vector<CqiReport>& cqi_withmute_feedbacks = ueRecord->GetCQIWithMute();
 		  int numberOfCqi = cqi_feedbacks.size ();
 		  for (int i = 0; i < numberOfCqi; i++)
 			{
-			  double sEff = GetMacEntity ()->GetAmcModule ()->GetEfficiencyFromCQI (cqi_feedbacks.at (i));
+			  double sEff = GetMacEntity()->GetAmcModule()->GetEfficiencyFromCQI(cqi_feedbacks.at (i));
 			  spectralEfficiency.push_back (sEff);
 			}
 

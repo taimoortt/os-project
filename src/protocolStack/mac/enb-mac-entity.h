@@ -37,6 +37,17 @@ class CqiWithMuteIdealControlMessage;
 class PdcchMapIdealControlMessage;
 class SchedulingRequestIdealControlMessage;
 
+struct CqiReport {
+  int cqi;
+  int cqi_with_mute;
+  int neighbor_cell;  // if neighbor_cell is -1, we don't mute
+  int final_cqi;
+
+  CqiReport(int _cqi, int _cqi_with_mute, int _neighbor_cell)
+  : cqi(_cqi), cqi_with_mute(_cqi_with_mute),
+    neighbor_cell(_neighbor_cell), final_cqi(0){}
+};
+
 class EnbMacEntity : public MacEntity
 {
 public:

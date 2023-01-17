@@ -125,7 +125,7 @@ UeLtePhy::StartRx (PacketBurst* p, TransmittedSignal* txSignal)
 #endif
 
   m_measuredSinr.clear();
-  std::vector<CQIRecord> cqi_report;
+  std::vector<SinrReport> cqi_report;
 
   //COMPUTE THE SINR
   std::vector<double> rxSignalValues;
@@ -270,7 +270,7 @@ UeLtePhy::CreateCqiFeedbacks (std::vector<double> sinr)
 }
 
 void
-UeLtePhy::CreateCqiFeedbacks (std::vector<CQIRecord> record)
+UeLtePhy::CreateCqiFeedbacks (std::vector<SinrReport> record)
 {
   UserEquipment* thisNode = (UserEquipment*) GetDevice ();
   if (thisNode->GetCqiManager ()->NeedToSendFeedbacks ()) {

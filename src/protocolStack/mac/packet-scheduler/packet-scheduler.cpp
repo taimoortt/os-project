@@ -214,12 +214,12 @@ FlowToSchedule::GetCqiFeedbacks (void)
 }
 
 void
-FlowToSchedule::SetCqiWithMuteFeedbacks (std::vector<CQIRecord>& cqiFeedbacks)
+FlowToSchedule::SetCqiWithMuteFeedbacks (std::vector<CqiReport>& cqiFeedbacks)
 {
   m_cqiWithMuteFeedbacks = cqiFeedbacks;
 }
 
-std::vector<CQIRecord>&
+std::vector<CqiReport>&
 FlowToSchedule::GetCqiWithMuteFeedbacks (void)
 {
   return m_cqiWithMuteFeedbacks;
@@ -237,7 +237,7 @@ FlowToSchedule::IsMuteRequested(int rb_id)
 void
 PacketScheduler::InsertFlowToSchedule (RadioBearer* bearer, int dataToTransmit,
   std::vector<double> specEff, std::vector<int>& cqiFeedbacks,
-  std::vector<CQIRecord>& cqiWithMuteFeedbacks)
+  std::vector<CqiReport>& cqiWithMuteFeedbacks)
 {
 #ifdef SCHEDULER_DEBUG
 	std::cout << "\t  --> selected flow: "

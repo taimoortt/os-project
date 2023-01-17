@@ -350,8 +350,11 @@ DL_FLS_PacketScheduler::Select_RT_FlowsToSchedule ()
 			  spectralEfficiency.push_back (sEff);
 			}
 
-		  //create flow to schedule record
-		  InsertFlowToSchedule(bearer, dataToTransmit, spectralEfficiency, cqiFeedbacks);
+      //create flow to schedule record
+      std::vector<CqiReport> empty_report;
+		  InsertFlowToSchedule(bearer, dataToTransmit,
+        spectralEfficiency, cqiFeedbacks, empty_report);
+
 		}
 	  else
 	    {}
@@ -410,7 +413,9 @@ DL_FLS_PacketScheduler::Select_NRT_FlowsToSchedule ()
 			}
 
 		  //create flow to schedule record
-		  InsertFlowToSchedule(bearer, dataToTransmit, spectralEfficiency, cqiFeedbacks);
+      std::vector<CqiReport> empty_report;
+		  InsertFlowToSchedule(bearer, dataToTransmit,
+        spectralEfficiency, cqiFeedbacks, empty_report);
 		}
 	  else
 	    {}

@@ -30,6 +30,7 @@ class MacEntity;
 class PacketBurst;
 class Packet;
 class RadioBearer;
+class CqiReport;
 
 struct FlowToSchedule
 {
@@ -45,7 +46,7 @@ struct FlowToSchedule
   std::vector<int> m_listOfAllocatedRBs;
   std::vector<int> m_listOfSelectedMCS;
   std::vector<int> m_cqiFeedbacks;
-  std::vector<CQIRecord> m_cqiWithMuteFeedbacks;
+  std::vector<CqiReport> m_cqiWithMuteFeedbacks;
 
   RadioBearer* GetBearer (void);
 
@@ -63,8 +64,8 @@ struct FlowToSchedule
 
   void SetCqiFeedbacks (std::vector<int>& cqiFeedbacks);
   std::vector<int>& GetCqiFeedbacks (void);
-  void SetCqiWithMuteFeedbacks(std::vector<CQIRecord>& cqi_withmute_feedbacks);
-  std::vector<CQIRecord>& GetCqiWithMuteFeedbacks(void);
+  void SetCqiWithMuteFeedbacks(std::vector<CqiReport>& cqi_withmute_feedbacks);
+  std::vector<CqiReport>& GetCqiWithMuteFeedbacks(void);
 
   bool IsMuteRequested(int i);
 };
@@ -97,7 +98,7 @@ public:
 						       int dataToTransmit,
 						       std::vector<double> specEff,
 						       std::vector<int>& cqiFeedbacks,
-                   std::vector<CQIRecord>& cqiWithMuteFeedbacks);
+                   std::vector<CqiReport>& cqiWithMuteFeedbacks);
 
 	void UpdateAllocatedBits (FlowToSchedule* scheduledFlow,
 						      int allocatedBits,

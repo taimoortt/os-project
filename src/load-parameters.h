@@ -84,8 +84,6 @@ static bool _channel_AWGN_ = false;
 //#define TEST_UL_SINR
 //#define TEST_DL_SINR
 
-#define SET_CENTRAL_SCHEDULER
-
 
 #endif /* PARAMETERS_H_ */
                            

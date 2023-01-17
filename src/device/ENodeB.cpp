@@ -253,12 +253,12 @@ ENodeB::UserEquipmentRecord::GetCQI (void)
 }
 
 void
-ENodeB::UserEquipmentRecord::SetCQIWithMute (std::vector<CQIRecord> cqi)
+ENodeB::UserEquipmentRecord::SetCQIWithMute (std::vector<CqiReport> cqi)
 {
   m_cqiWithMuteFeedback = cqi;
 }
 
-std::vector<CQIRecord>&
+std::vector<CqiReport>&
 ENodeB::UserEquipmentRecord::GetCQIWithMute (void)
 {
  return m_cqiWithMuteFeedback;

@@ -167,8 +167,8 @@ CqiWithMuteIdealControlMessage::~CqiWithMuteIdealControlMessage (void)
 
 
 void
-CqiWithMuteIdealControlMessage::AddNewRecord (int subChannel, double cqi,
-  double cqi_with_mute, int neighbor_cell)
+CqiWithMuteIdealControlMessage::AddNewRecord (int subChannel, int cqi,
+  int cqi_with_mute, int neighbor_cell)
 {
   CqiFeedback c;
   c.m_idSubChannel = subChannel;

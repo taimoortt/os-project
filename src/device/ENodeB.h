@@ -30,7 +30,7 @@ class UserEquipment;
 class Gateway;
 
 class PacketScheduler;
-class CQIRecord;
+class CqiReport;
 
 class ENodeB : public NetworkNode {
 public:
@@ -45,11 +45,11 @@ public:
     UserEquipment* GetUE (void) const;
 
     std::vector<int> m_cqiFeedback;
-    std::vector<CQIRecord> m_cqiWithMuteFeedback;
+    std::vector<CqiReport> m_cqiWithMuteFeedback;
 		void SetCQI (std::vector<int> cqi);
 		std::vector<int>& GetCQI (void);
-    void SetCQIWithMute (std::vector<CQIRecord> cqi);
-    std::vector<CQIRecord>& GetCQIWithMute (void);
+    void SetCQIWithMute (std::vector<CqiReport> cqi);
+    std::vector<CqiReport>& GetCQIWithMute (void);
 
 		int m_schedulingRequest; // in bytes
 		void SetSchedulingRequest (int r);
