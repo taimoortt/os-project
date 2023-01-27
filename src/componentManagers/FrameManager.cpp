@@ -28,6 +28,7 @@
 #include "../protocolStack/mac/packet-scheduler/downlink-packet-scheduler.h"
 #include "../protocolStack/mac/packet-scheduler/packet-scheduler.h"
 #include "../protocolStack/mac/AMCModule.h"
+#include "../core/spectrum/bandwidth-manager.h"
 #include "../utility/eesm-effective-sinr.h"
 #include "../flows/radio-bearer.h"
 #include "../flows/application/Application.h"
@@ -338,7 +339,7 @@ FrameManager::CentralResourceAllocation(void)
   std::vector<ENodeB*> *enodebs = GetNetworkManager ()->GetENodeBContainer ();
   assert(GetFrameStructure() == FrameManager::FRAME_STRUCTURE_FDD);
 #ifdef FRAME_MANAGER_DEBUG
-	std::cout << "Central Resource Allocation for eNB:";
+	std::cout << "Resource Allocation for eNB:";
   for (auto iter = enodebs->begin (); iter != enodebs->end (); iter++) {
 	  ENodeB* enb = *iter;
     std::cout << " " << enb->GetIDNetworkNode();
@@ -347,8 +348,10 @@ FrameManager::CentralResourceAllocation(void)
 #endif
 
 #ifdef SET_CENTRAL_SCHEDULER
+  std::cout << "Central Downlink RBs Allocation!" << std::endl;
   CentralDownlinkRBsAllocation();
 #else
+  std::cout << "Original Per-Cell Downlink RBs Allocation!" << std::endl;
 for (auto iter = enodebs->begin (); iter != enodebs->end (); iter++) {
 	  ENodeB* enb = *iter;
     enb->DownlinkResourceBlockAllocation();
@@ -366,6 +369,7 @@ FrameManager::CentralDownlinkRBsAllocation(void)
   std::vector<ENodeB*> *enodebs =
     GetNetworkManager ()->GetENodeBContainer ();
   std::vector<DownlinkPacketScheduler*> schedulers;
+  // Assume that every eNB has same number of RBs
   int nb_of_rbs = 0;
   int nb_of_cells = 0;
   int cells_with_flow = 0;
@@ -375,6 +379,14 @@ FrameManager::CentralDownlinkRBsAllocation(void)
     DownlinkPacketScheduler* scheduler =
       (DownlinkPacketScheduler*)enb->GetDLScheduler();
     assert(scheduler != NULL);
+    int cell_rbs = scheduler->GetMacEntity()->GetDevice()->GetPhy()
+      ->GetBandwidthManager()->GetDlSubChannels().size (); 
+    if (nb_of_rbs == 0) {
+      nb_of_rbs = cell_rbs;
+    }
+    else {
+      assert(nb_of_rbs == cell_rbs);
+    }
     scheduler->UpdateAverageTransmissionRate();
     scheduler->SelectFlowsToSchedule();
     schedulers.push_back(scheduler);
@@ -383,7 +395,6 @@ FrameManager::CentralDownlinkRBsAllocation(void)
     }
   }
   nb_of_cells = schedulers.size();
-  
   std::vector<std::unordered_set<int>> mute_rbs_cells;
   for (int i = 0; i < nb_of_rbs; i++) {
     mute_rbs_cells.emplace_back();
@@ -410,13 +421,13 @@ FrameManager::CentralDownlinkRBsAllocation(void)
       double target_metric = -1;
       FlowToSchedule* schedule_flow = nullptr;
       for (int j = 0; j < schedulers.size(); j++) {
-        if (cells_muted.find(j) == cells_muted.end() ||
-            cells_allocated.find(j) == cells_allocated.end()) {
+        if (cells_muted.find(j) != cells_muted.end() ||
+            cells_allocated.find(j) != cells_allocated.end()) {
           continue;
         }
         FlowsToSchedule* flows = schedulers[j]->GetFlowsToSchedule();
         for (int k = 0; k < flows->size(); k++) {
-          if (metrics[j][k] > target_metric) {
+          if (metrics[j][k] >= target_metric) { 
             target_metric = metrics[j][k];
             schedule_cell_id = j;
             schedule_flow_id = k;
@@ -433,6 +444,9 @@ FrameManager::CentralDownlinkRBsAllocation(void)
         schedule_flow->GetCqiWithMuteFeedbacks();
       cells_allocated.insert(schedule_cell_id);
       int mute_cell_id = cqi_with_mute[i].neighbor_cell;
+
+      /*enforce mute_cell_id = -1 to test*/
+      mute_cell_id = -1;
       if (mute_cell_id != -1) {
         // applying RBs muting here
         if (cells_allocated.find(mute_cell_id) != cells_allocated.end()) {
@@ -452,50 +466,56 @@ FrameManager::CentralDownlinkRBsAllocation(void)
         cqi_with_mute[i].final_cqi = cqi_with_mute[i].cqi;
       }
     }
-    for (int j = 0; j < schedulers.size(); j++) {
-      PdcchMapIdealControlMessage *pdcchMsg = new PdcchMapIdealControlMessage ();
-      FlowsToSchedule* flows = schedulers[j]->GetFlowsToSchedule();
-      AMCModule* amc = schedulers[j]->GetMacEntity()->GetAmcModule();
-      for (auto it = flows->begin (); it != flows->end (); it++) {
-        FlowToSchedule *flow = (*it);
-        std::vector<int>* allocated_rbs = flow->GetListOfAllocatedRBs();
-        if (allocated_rbs->size() > 0) {
-          std::vector<double> sinr_values;
-          for(auto it = allocated_rbs->begin(); it != allocated_rbs->end(); it++) {
-            int rb_id = *it;
-            double sinr = amc->GetSinrFromCQI(
+  }
+  for (int j = 0; j < schedulers.size(); j++) {
+#ifdef SCHEDULER_DEBUG
+	  std::cout << " ---- RBsAllocation";
+    std::cout << ", available RBs " << nb_of_rbs 
+      << ", flows " << schedulers[j]->GetFlowsToSchedule()->size ()
+      << std::endl;
+#endif
+    PdcchMapIdealControlMessage *pdcchMsg = new PdcchMapIdealControlMessage ();
+    FlowsToSchedule* flows = schedulers[j]->GetFlowsToSchedule();
+    AMCModule* amc = schedulers[j]->GetMacEntity()->GetAmcModule();
+    for (auto it = flows->begin (); it != flows->end (); it++) {
+      FlowToSchedule *flow = (*it);
+      std::vector<int>* allocated_rbs = flow->GetListOfAllocatedRBs();
+      if (allocated_rbs->size() > 0) {
+        std::vector<double> sinr_values;
+        for(auto it = allocated_rbs->begin(); it != allocated_rbs->end(); it++) {
+          int rb_id = *it;
+          double sinr = amc->GetSinrFromCQI(
               flow->GetCqiWithMuteFeedbacks().at(rb_id).final_cqi
-            );
-            sinr_values.push_back(sinr);
-          }
-          double effective_sinr = GetEesmEffectiveSinr(sinr_values);
-          int mcs = amc->GetMCSFromCQI(amc->GetCQIFromSinr(effective_sinr));
-          int tbs_size = amc->GetTBSizeFromMCS(mcs, allocated_rbs->size());
-          flow->UpdateAllocatedBits(tbs_size);
+              );
+          sinr_values.push_back(sinr);
+        }
+        double effective_sinr = GetEesmEffectiveSinr(sinr_values);
+        int mcs = amc->GetMCSFromCQI(amc->GetCQIFromSinr(effective_sinr));
+        int tbs_size = amc->GetTBSizeFromMCS(mcs, allocated_rbs->size());
+        flow->UpdateAllocatedBits(tbs_size);
 
 #ifdef SCHEDULER_DEBUG
-		      std::cout << "\t\t --> flow "
-            << flow->GetBearer()->GetApplication()->GetApplicationID()
-				    << " has been scheduled:"
-            << " nb_of_RBs: " << flow->GetListOfAllocatedRBs ()->size ()
-            << " effective_sinr: " << effective_sinr
-            << " tbs_size: " << tbs_size
-				    << std::endl;
+        std::cout << "\t\t --> flow "
+          << flow->GetBearer()->GetApplication()->GetApplicationID()
+          << " has been scheduled:"
+          << " nb_of_RBs: " << flow->GetListOfAllocatedRBs ()->size ()
+          << " effective_sinr: " << effective_sinr
+          << " tbs_size: " << tbs_size
+          << std::endl;
 #endif
-          for(auto it = allocated_rbs->begin(); it != allocated_rbs->end(); it++) {
-            pdcchMsg->AddNewRecord(
+        for(auto it = allocated_rbs->begin(); it != allocated_rbs->end(); it++) {
+          pdcchMsg->AddNewRecord(
               PdcchMapIdealControlMessage::DOWNLINK,
               *it, flow->GetBearer()->GetDestination(), mcs
               );
-          }
         }
       }
-      if (pdcchMsg->GetMessage()->size() > 0) {
-        schedulers[j]->GetMacEntity()->GetDevice()
-          ->GetPhy()->SendIdealControlMessage(pdcchMsg);
-      }
-      delete pdcchMsg;
     }
+    if (pdcchMsg->GetMessage()->size() > 0) {
+      schedulers[j]->GetMacEntity()->GetDevice()
+        ->GetPhy()->SendIdealControlMessage(pdcchMsg);
+    }
+    delete pdcchMsg;
   }
   for (auto it = schedulers.begin(); it != schedulers.end(); it++) {
     (*it)->StopSchedule();

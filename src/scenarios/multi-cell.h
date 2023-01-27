@@ -60,8 +60,8 @@ static void MultiCell (int nbCell, double radius,
 {
 
   // define simulation times
-  double duration = 100;
-  double flow_duration = 100;
+  double duration = 0.5;
+  double flow_duration = 0.5;
 
   int cluster = 3;
   double bandwidth = 20;
@@ -241,7 +241,8 @@ static void MultiCell (int nbCell, double radius,
 												 cells->at (j),
 												 eNBs->at (j),
 												 1, //HO activated!
-												 Mobility::RANDOM_DIRECTION);
+                         Mobility::CONSTANT_POSITION);
+												 //Mobility::RANDOM_DIRECTION);
 
 		  std::cout << "Created UE - id " << idUE << " position " << posX << " " << posY
 				  << ", cell " <<  ue->GetCell ()->GetIdCell ()

@@ -315,16 +315,15 @@ DownlinkPacketScheduler::RBsAllocation ()
           //define the amount of bytes to transmit
           //int transportBlockSize = amc->GetTBSizeFromMCS (mcs);
           int transportBlockSize = amc->GetTBSizeFromMCS (mcs, flow->GetListOfAllocatedRBs ()->size ());
-          double bitsToTransmit = transportBlockSize;
-          flow->UpdateAllocatedBits (bitsToTransmit);
+          flow->UpdateAllocatedBits (transportBlockSize);
 
 #ifdef SCHEDULER_DEBUG
-		  std::cout << "\t\t --> flow "	<< flow->GetBearer ()->GetApplication ()->GetApplicationID ()
+		  std::cout << "\t\t --> flow "
+          << flow->GetBearer ()->GetApplication ()->GetApplicationID ()
 				  << " has been scheduled:" <<
 				  " nb_of_RBs: " << flow->GetListOfAllocatedRBs ()->size () <<
-				  " effectiveSinr: " << effectiveSinr <<
-				  " tbs: " << transportBlockSize <<
-				  " bitsToTransmit: " << bitsToTransmit
+				  " effective_sinr: " << effectiveSinr <<
+				  " tbs_size: " << transportBlockSize
 				  << std::endl;
 #endif
 

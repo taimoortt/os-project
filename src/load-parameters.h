@@ -69,14 +69,14 @@ static bool _channel_AWGN_ = false;
 //#define BLER_DEBUG
 //#define MOBILITY_DEBUG
 //#define MOBILITY_DEBUG_TAB
-#define HANDOVER_DEBUG
+//#define HANDOVER_DEBUG
 //#define TRANSMISSION_DEBUG
 //#define CHANNEL_REALIZATION_DEBUG
 //#define TEST_DEVICE_ON_CHANNEL
 //#define TEST_START_APPLICATION
 //#define TEST_ENQUEUE_PACKETS
 //#define TEST_PROPAGATION_LOSS_MODEL
-#define INTERFERENCE_DEBUG
+//#define INTERFERENCE_DEBUG
 //#define TEST_CQI_FEEDBACKS
 #define SCHEDULER_DEBUG
 //#define AMC_MAPPING
@@ -84,6 +84,7 @@ static bool _channel_AWGN_ = false;
 //#define TEST_UL_SINR
 //#define TEST_DL_SINR
 
+#define SET_CENTRAL_SCHEDULER
 
 #endif /* PARAMETERS_H_ */
                            
