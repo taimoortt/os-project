@@ -27,7 +27,7 @@
 
 class MwRulePacketScheduler : public DownlinkPacketScheduler {
 public:
-	MwRulePacketScheduler();
+	MwRulePacketScheduler(std::string config_fname="");
 	virtual ~MwRulePacketScheduler();
 
 	virtual double ComputeSchedulingMetric (RadioBearer *bearer, double spectralEfficiency, int subChannel);

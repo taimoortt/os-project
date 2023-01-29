@@ -28,7 +28,7 @@
 
 class DL_FLS_PacketScheduler : public DownlinkPacketScheduler {
 public:
-	DL_FLS_PacketScheduler();
+	DL_FLS_PacketScheduler(std::string config_fname="");
 	virtual ~DL_FLS_PacketScheduler();
 
 	enum LowerLevelSchedulerType {

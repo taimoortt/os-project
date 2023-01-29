@@ -27,7 +27,7 @@
 
 class DL_EXP_PacketScheduler : public DownlinkPacketScheduler {
 public:
-	DL_EXP_PacketScheduler();
+	DL_EXP_PacketScheduler(std::string config_fname="");
 	virtual ~DL_EXP_PacketScheduler();
 
 	virtual void DoSchedule (void);

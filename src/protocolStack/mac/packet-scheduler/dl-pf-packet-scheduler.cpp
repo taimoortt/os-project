@@ -33,8 +33,8 @@
 #include "../../../core/spectrum/bandwidth-manager.h"
 #include "../../../core/idealMessages/ideal-control-messages.h"
 
-DL_PF_PacketScheduler::DL_PF_PacketScheduler()
-{
+DL_PF_PacketScheduler::DL_PF_PacketScheduler(std::string config_fname)
+: DownlinkPacketScheduler(config_fname) {
   SetMacEntity (0);
   CreateFlowsToSchedule ();
 }

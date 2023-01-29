@@ -35,8 +35,8 @@
 #include "../../../flows/QoS/QoSForM_LWDF.h"
 #include "../../../flows/MacQueue.h"
 
-DL_MLWDF_PacketScheduler::DL_MLWDF_PacketScheduler()
-{
+DL_MLWDF_PacketScheduler::DL_MLWDF_PacketScheduler(std::string config_fname)
+: DownlinkPacketScheduler(config_fname) {
   SetMacEntity (0);
   CreateFlowsToSchedule ();
 }

@@ -35,8 +35,8 @@
 #include "../../../utility/eesm-effective-sinr.h"
 
 
-DL_FLS_PacketScheduler::DL_FLS_PacketScheduler()
-{
+DL_FLS_PacketScheduler::DL_FLS_PacketScheduler(std::string config_fname)
+: DownlinkPacketScheduler(config_fname) {
   SetMacEntity (0);
   CreateFlowsToSchedule ();
   m_runControlLaw = true;

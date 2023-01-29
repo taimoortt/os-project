@@ -27,7 +27,7 @@
 
 class LogRuleDownlinkPacketScheduler : public DownlinkPacketScheduler {
 public:
-	LogRuleDownlinkPacketScheduler();
+	LogRuleDownlinkPacketScheduler(std::string config_fname="");
 	virtual ~LogRuleDownlinkPacketScheduler();
 
 	virtual void DoSchedule (void);

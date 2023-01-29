@@ -35,9 +35,50 @@
 #include "../../../core/spectrum/bandwidth-manager.h"
 #include "../../../flows/MacQueue.h"
 #include "../../../utility/eesm-effective-sinr.h"
+#include <jsoncpp/json/json.h>
+#include <fstream>
 
-DownlinkPacketScheduler::DownlinkPacketScheduler()
-{}
+DownlinkPacketScheduler::DownlinkPacketScheduler(std::string config_fname)
+{
+  if (config_fname == "")
+    return;
+  std::ifstream ifs(config_fname);
+  if (!ifs.is_open()) {
+    throw std::runtime_error("Fail to open configuration file.");
+  }
+  Json::Reader reader;
+  Json::Value obj;
+  reader.parse(ifs, obj);
+  ifs.close();
+  const Json::Value& ues_per_slice = obj["ues_per_slice"];
+  slice_ctx_.num_slices_ = ues_per_slice.size();
+  int num_ue;
+  for (int i = 0; i < slice_ctx_.num_slices_; i++) {
+    num_ue = ues_per_slice[i].asInt();
+    for (int j = 0; j < num_ue; j++) {
+      slice_ctx_.user_to_slice_.push_back(i);
+    }
+  }
+  const Json::Value& slice_schemes = obj["slices"];
+  for (int i = 0; i < slice_schemes.size(); i++) {
+    int n_slices = slice_schemes[i]["n_slices"].asInt();
+    for (int j = 0; j < n_slices; j++) {
+      slice_ctx_.weights_.push_back(
+        slice_schemes[i]["weight"].asDouble()
+      );
+      slice_ctx_.algo_params_.emplace_back(
+        slice_schemes[i]["algo_alpha"].asInt(),
+        slice_schemes[i]["algo_beta"].asInt(),
+        slice_schemes[i]["algo_epsilon"].asInt(),
+        slice_schemes[i]["algo_psi"].asInt()
+      );
+    }
+  }
+  slice_ctx_.priority_.resize(slice_ctx_.num_slices_);
+  std::fill(slice_ctx_.priority_.begin(), slice_ctx_.priority_.end(), 0);
+  slice_ctx_.ewma_time_.resize(slice_ctx_.num_slices_);
+  std::fill(slice_ctx_.ewma_time_.begin(), slice_ctx_.ewma_time_.end(), 0);
+}
 
 DownlinkPacketScheduler::~DownlinkPacketScheduler()
 {

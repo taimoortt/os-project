@@ -35,8 +35,9 @@
 #include "../../../flows/QoS/QoSParameters.h"
 #include "../../../flows/MacQueue.h"
 
-ExpRuleDownlinkPacketScheduler::ExpRuleDownlinkPacketScheduler()
-{
+ExpRuleDownlinkPacketScheduler::
+ExpRuleDownlinkPacketScheduler(std::string config_fname)
+: DownlinkPacketScheduler(config_fname) {
   SetMacEntity (0);
   CreateFlowsToSchedule ();
 }

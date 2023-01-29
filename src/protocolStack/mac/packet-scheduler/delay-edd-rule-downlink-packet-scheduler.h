@@ -34,7 +34,7 @@
 
 class DelayEddRuleDownlinkPacketScheduler : public DownlinkPacketScheduler {
 public:
-	DelayEddRuleDownlinkPacketScheduler();
+	DelayEddRuleDownlinkPacketScheduler(std::string config_fname="");
 	virtual ~DelayEddRuleDownlinkPacketScheduler();
 
 	virtual double ComputeSchedulingMetric (RadioBearer *bearer, double spectralEfficiency, int subChannel);

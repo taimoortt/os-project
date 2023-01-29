@@ -24,10 +24,11 @@
 #define DLPFPACKETSCHEDULER_H_
 
 #include "downlink-packet-scheduler.h"
+#include <string>
 
 class DL_PF_PacketScheduler : public DownlinkPacketScheduler {
 public:
-	DL_PF_PacketScheduler();
+	DL_PF_PacketScheduler(std::string config_fname="");
 	virtual ~DL_PF_PacketScheduler();
 
 	virtual double ComputeSchedulingMetric (RadioBearer *bearer, double spectralEfficiency, int subChannel);

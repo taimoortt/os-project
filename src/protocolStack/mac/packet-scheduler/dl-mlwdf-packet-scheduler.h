@@ -26,7 +26,7 @@
 
 class DL_MLWDF_PacketScheduler : public DownlinkPacketScheduler {
 public:
-	DL_MLWDF_PacketScheduler();
+	DL_MLWDF_PacketScheduler(std::string config_fname="");
 	virtual ~DL_MLWDF_PacketScheduler();
 
 	virtual void DoSchedule (void);

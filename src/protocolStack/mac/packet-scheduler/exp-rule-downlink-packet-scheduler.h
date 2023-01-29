@@ -27,7 +27,7 @@
 
 class ExpRuleDownlinkPacketScheduler : public DownlinkPacketScheduler {
 public:
-	ExpRuleDownlinkPacketScheduler();
+	ExpRuleDownlinkPacketScheduler(std::string config_fname="");
 	virtual ~ExpRuleDownlinkPacketScheduler();
 
 	virtual void DoSchedule (void);

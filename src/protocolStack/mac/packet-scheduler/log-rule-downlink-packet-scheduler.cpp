@@ -35,8 +35,8 @@
 #include "../../../flows/QoS/QoSParameters.h"
 #include "../../../flows/MacQueue.h"
 
-LogRuleDownlinkPacketScheduler::LogRuleDownlinkPacketScheduler()
-{
+LogRuleDownlinkPacketScheduler::LogRuleDownlinkPacketScheduler(std::string config_fname)
+: DownlinkPacketScheduler(config_fname) {
   SetMacEntity (0);
   CreateFlowsToSchedule ();
 }

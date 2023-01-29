@@ -24,10 +24,34 @@
 #define DOWNLINKPACKETSCHEDULER_H_
 
 #include "packet-scheduler.h"
+#include <string>
+
+struct SliceContext {
+  struct SchedulerAlgo {
+    int alpha;
+    int beta;
+    int epsilon;
+    int psi;
+    SchedulerAlgo(int _alpha, int _beta, int _epsilon, int _psi) {
+      alpha = _alpha;
+      beta = _beta;
+      epsilon = _epsilon;
+      psi = _psi;
+    }
+  };
+
+public:
+  int                             num_slices_ = 1;
+  std::vector<int>                user_to_slice_;
+  std::vector<double>             weights_;
+  std::vector<SchedulerAlgo>      algo_params_;
+  std::vector<int>                priority_;
+  std::vector<double>             ewma_time_;
+};
 
 class DownlinkPacketScheduler: public PacketScheduler {
 public:
-	DownlinkPacketScheduler();
+	DownlinkPacketScheduler(std::string config_fname="");
 	virtual ~DownlinkPacketScheduler();
 
 	void SelectFlowsToSchedule ();
@@ -39,6 +63,8 @@ public:
 	virtual double ComputeSchedulingMetric (RadioBearer *bearer, double spectralEfficiency, int subChannel) = 0;
 
 	void UpdateAverageTransmissionRate (void);
+
+  SliceContext  slice_ctx_;
 
 };
 
