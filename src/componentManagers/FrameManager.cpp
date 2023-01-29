@@ -371,8 +371,7 @@ FrameManager::CentralDownlinkRBsAllocation(void)
   std::vector<DownlinkPacketScheduler*> schedulers;
   // Assume that every eNB has same number of RBs
   int nb_of_rbs = 0;
-  int nb_of_cells = 0;
-  int cells_with_flow = 0;
+  int nb_of_cells = enodebs->size();
   // initialization
   for (auto it = enodebs->begin(); it != enodebs->end(); it++) {
     ENodeB* enb = *it;
@@ -387,14 +386,13 @@ FrameManager::CentralDownlinkRBsAllocation(void)
     else {
       assert(nb_of_rbs == cell_rbs);
     }
-    scheduler->UpdateAverageTransmissionRate();
-    scheduler->SelectFlowsToSchedule();
     schedulers.push_back(scheduler);
-    if (scheduler->GetFlowsToSchedule()->size() != 0) {
-      cells_with_flow += 1;
-    }
   }
-  nb_of_cells = schedulers.size();
+  // set up schedulers
+  for (int j = 0; j < schedulers.size(); j++) {
+    schedulers[j]->UpdateAverageTransmissionRate();
+    schedulers[j]->SelectFlowsToSchedule();
+  }
   std::vector<std::unordered_set<int>> mute_rbs_cells;
   for (int i = 0; i < nb_of_rbs; i++) {
     mute_rbs_cells.emplace_back();
@@ -445,10 +443,10 @@ FrameManager::CentralDownlinkRBsAllocation(void)
       cells_allocated.insert(schedule_cell_id);
       int mute_cell_id = cqi_with_mute[i].neighbor_cell;
 
-      /*enforce mute_cell_id = -1 to test*/
-      mute_cell_id = -1;
+      cqi_with_mute[i].final_cqi = cqi_with_mute[i].cqi;
+
+      // condition to apply muting, currently always mute
       if (mute_cell_id != -1) {
-        // applying RBs muting here
         if (cells_allocated.find(mute_cell_id) != cells_allocated.end()) {
           // cannot mute, apply the original cqi
           cqi_with_mute[i].final_cqi = cqi_with_mute[i].cqi;
@@ -460,10 +458,6 @@ FrameManager::CentralDownlinkRBsAllocation(void)
           // apply the cqi_with_mute
           cqi_with_mute[i].final_cqi = cqi_with_mute[i].cqi_with_mute;
         }
-      }
-      else {
-        // apply the original cqi
-        cqi_with_mute[i].final_cqi = cqi_with_mute[i].cqi;
       }
     }
   }

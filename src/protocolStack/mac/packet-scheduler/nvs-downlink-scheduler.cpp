@@ -23,6 +23,110 @@ NVSDownlinkScheduler::~NVSDownlinkScheduler()
   Destroy ();
 }
 
+void
+NVSDownlinkScheduler::SelectFlowsToSchedule()
+{
+  current_slice_ = SelectSliceToServe();
+
+  ClearFlowsToSchedule ();
+  RrcEntity *rrc = GetMacEntity ()->GetDevice ()->GetProtocolStack ()->GetRrcEntity ();
+  RrcEntity::RadioBearersContainer* bearers = rrc->GetRadioBearerContainer ();
+
+  for (auto it = bearers->begin (); it != bearers->end (); it++)
+	{
+	  //SELECT FLOWS TO SCHEDULE
+	  RadioBearer *bearer = (*it);
+    int user_id = bearer->GetUserID();
+    if (slice_ctx_.user_to_slice_[user_id] != current_slice_)
+      continue;
+
+	  if (bearer->HasPackets () &&
+      bearer->GetDestination ()->GetNodeState () == NetworkNode::STATE_ACTIVE)
+		{
+		  //compute data to transmit
+		  int dataToTransmit;
+		  if (bearer->GetApplication()->GetApplicationType()
+        == Application::APPLICATION_TYPE_INFINITE_BUFFER) {
+			  dataToTransmit = 100000000;
+			}
+		  else {
+			  dataToTransmit = bearer->GetQueueSize ();
+			}
+
+		  //compute spectral efficiency
+		  ENodeB *enb = (ENodeB*) GetMacEntity ()->GetDevice ();
+		  ENodeB::UserEquipmentRecord *ueRecord = enb->GetUserEquipmentRecord(
+        bearer->GetDestination ()->GetIDNetworkNode ());
+		  std::vector<double> spectralEfficiency;
+      std::vector<int>& cqi_feedbacks = ueRecord->GetCQI();
+      std::vector<CqiReport>& cqi_withmute_feedbacks = ueRecord->GetCQIWithMute();
+		  int numberOfCqi = cqi_feedbacks.size ();
+		  for (int i = 0; i < numberOfCqi; i++)
+			{
+			  double sEff = GetMacEntity()->GetAmcModule()->GetEfficiencyFromCQI(cqi_feedbacks.at (i));
+			  spectralEfficiency.push_back (sEff);
+			}
+
+		  //create flow to scheduler record
+		  InsertFlowToSchedule(bearer, dataToTransmit,
+        spectralEfficiency, cqi_feedbacks, cqi_withmute_feedbacks);
+		}
+	  else
+	    {}
+	}
+}
+
+int NVSDownlinkScheduler::SelectSliceToServe()
+{
+  int slice_id = 0;
+  double max_score = 0;
+
+  RrcEntity *rrc = GetMacEntity ()->GetDevice ()->GetProtocolStack ()->GetRrcEntity ();
+  RrcEntity::RadioBearersContainer* bearers = rrc->GetRadioBearerContainer ();
+  std::vector<bool> slice_with_queue(slice_ctx_.num_slices_, false);
+  for (auto it = bearers->begin(); it != bearers->end(); it++) {
+    RadioBearer *bearer = (*it);
+    int user_id = bearer->GetUserID();
+
+    if (bearer->HasPackets () && 
+      bearer->GetDestination()->GetNodeState () == NetworkNode::STATE_ACTIVE)
+		{
+		  int dataToTransmit;
+		  if (bearer->GetApplication ()->GetApplicationType()
+        == Application::APPLICATION_TYPE_INFINITE_BUFFER) {
+			  dataToTransmit = 100000000;
+			}
+		  else {
+			  dataToTransmit = bearer->GetQueueSize ();
+			}
+      if (dataToTransmit > 0) {
+        slice_with_queue[slice_ctx_.user_to_slice_[user_id]] = true;
+      }
+    }
+  }
+  for (int i = 0; i < slice_ctx_.num_slices_; ++i) {
+    if (! slice_with_queue[i]) continue;
+    if (slice_ctx_.ewma_time_[i] == 0) {
+      slice_id = i;
+      break;
+    }
+    else {
+      double score = slice_ctx_.weights_[i] / slice_ctx_.ewma_time_[i];
+      if (score >= max_score) {
+        max_score = score;
+        slice_id = i;
+      }
+    }
+  }
+  for (int i = 0; i < slice_ctx_.num_slices_; ++i) {
+    if (! slice_with_queue[i]) continue;
+    slice_ctx_.ewma_time_[i] = (1-beta_) * slice_ctx_.ewma_time_[i];
+    if (i == slice_id) {
+      slice_ctx_.ewma_time_[i] += beta_ * 1;
+    }
+  }
+  return slice_id;
+}
 
 double
 NVSDownlinkScheduler::ComputeSchedulingMetric (RadioBearer *bearer, double spectralEfficiency, int subChannel)

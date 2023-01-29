@@ -125,7 +125,7 @@ UeLtePhy::StartRx (PacketBurst* p, TransmittedSignal* txSignal)
 #endif
 
   m_measuredSinr.clear();
-  std::vector<SinrReport> cqi_report;
+  std::vector<SinrReport> sinr_report;
 
   //COMPUTE THE SINR
   std::vector<double> rxSignalValues;
@@ -173,18 +173,23 @@ UeLtePhy::StartRx (PacketBurst* p, TransmittedSignal* txSignal)
     avg_rsrp += power;
     avg_sinr += (power - noise_interference);
     // cqi report with muting information
-    if (power - neighbor_rsrp < 3) {
-      cqi_report.emplace_back(
-        power - noise_interference,
-        power - noise_interference_with_mute,
-        neighbor_cell_id
-        );
-    }
-    else {
-      cqi_report.emplace_back(
-        power - noise_interference,
-        0, -1);
-    }
+    sinr_report.emplace_back(
+      power - noise_interference,
+      power - noise_interference_with_mute,
+      neighbor_cell_id
+    );
+    // if (power - neighbor_rsrp < 3) {
+    //   sinr_report.emplace_back(
+    //     power - noise_interference,
+    //     power - noise_interference_with_mute,
+    //     neighbor_cell_id
+    //     );
+    // }
+    // else {
+    //   sinr_report.emplace_back(
+    //     power - noise_interference,
+    //     0, -1);
+    // }
   }
   avg_rsrp /= rxSignalValues.size();
   avg_sinr /= rxSignalValues.size();
@@ -248,7 +253,7 @@ UeLtePhy::StartRx (PacketBurst* p, TransmittedSignal* txSignal)
 
   //CQI report
   // CreateCqiFeedbacks (m_measuredSinr);
-  CreateCqiFeedbacks(cqi_report);
+  CreateCqiFeedbacks(sinr_report);
 
   m_channelsForRx.clear ();
   m_channelsForTx.clear ();
