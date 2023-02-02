@@ -319,65 +319,116 @@ DownlinkPacketScheduler::RBsAllocation ()
   }
 #endif
 
-  //Finalize the allocation
-  PdcchMapIdealControlMessage *pdcchMsg = new PdcchMapIdealControlMessage ();
+  FinalizeScheduledFlows();
+//   PdcchMapIdealControlMessage *pdcchMsg = new PdcchMapIdealControlMessage ();
 
-  for (FlowsToSchedule::iterator it = flows->begin (); it != flows->end (); it++)
-    {
-      FlowToSchedule *flow = (*it);
-      if (flow->GetListOfAllocatedRBs ()->size () > 0)
-        {
-          //this flow has been scheduled
-          std::vector<double> estimatedSinrValues;
-          for (int rb = 0; rb < flow->GetListOfAllocatedRBs ()->size (); rb++ )
+//   for (FlowsToSchedule::iterator it = flows->begin (); it != flows->end (); it++)
+//   {
+//     FlowToSchedule *flow = (*it);
+//     if (flow->GetListOfAllocatedRBs ()->size () > 0)
+//     {
+//       //this flow has been scheduled
+//       std::vector<double> estimatedSinrValues;
+//       for (int rb = 0; rb < flow->GetListOfAllocatedRBs ()->size (); rb++ )
 
-            {
-              double sinr = amc->GetSinrFromCQI (
-                      flow->GetCqiFeedbacks ().at (flow->GetListOfAllocatedRBs ()->at (rb)));
+//       {
+//         double sinr = amc->GetSinrFromCQI (
+//             flow->GetCqiFeedbacks ().at (flow->GetListOfAllocatedRBs ()->at (rb)));
 
-              estimatedSinrValues.push_back (sinr);
-            }
+//         estimatedSinrValues.push_back (sinr);
+//       }
 
-          //compute the effective sinr
-          double effectiveSinr = GetEesmEffectiveSinr (estimatedSinrValues);
+//       //compute the effective sinr
+//       double effectiveSinr = GetEesmEffectiveSinr (estimatedSinrValues);
+//       //get the MCS for transmission
+//       int mcs = amc->GetMCSFromCQI (amc->GetCQIFromSinr (effectiveSinr));
+//       //define the amount of bytes to transmit
+//       int transportBlockSize = amc->GetTBSizeFromMCS (mcs, flow->GetListOfAllocatedRBs ()->size ());
+//       flow->UpdateAllocatedBits (transportBlockSize);
 
-          //get the MCS for transmission
+// #ifdef SCHEDULER_DEBUG
+//       std::cout << "\t\t --> flow "
+//         << flow->GetBearer ()->GetApplication ()->GetApplicationID ()
+//         << " has been scheduled:" <<
+//         " nb_of_RBs: " << flow->GetListOfAllocatedRBs ()->size () <<
+//         " effective_sinr: " << effectiveSinr <<
+//         " tbs_size: " << transportBlockSize
+//         << std::endl;
+// #endif
+//       //create PDCCH messages
+//       for (int rb = 0; rb < flow->GetListOfAllocatedRBs ()->size (); rb++ )
+//       {
+//         pdcchMsg->AddNewRecord (PdcchMapIdealControlMessage::DOWNLINK,
+//             flow->GetListOfAllocatedRBs ()->at (rb),
+//             flow->GetBearer ()->GetDestination (),
+//             mcs);
+//       }
+//     }
+//   }
 
-          int mcs = amc->GetMCSFromCQI (amc->GetCQIFromSinr (effectiveSinr));
-
-          //define the amount of bytes to transmit
-          //int transportBlockSize = amc->GetTBSizeFromMCS (mcs);
-          int transportBlockSize = amc->GetTBSizeFromMCS (mcs, flow->GetListOfAllocatedRBs ()->size ());
-          flow->UpdateAllocatedBits (transportBlockSize);
-
-#ifdef SCHEDULER_DEBUG
-		  std::cout << "\t\t --> flow "
-          << flow->GetBearer ()->GetApplication ()->GetApplicationID ()
-				  << " has been scheduled:" <<
-				  " nb_of_RBs: " << flow->GetListOfAllocatedRBs ()->size () <<
-				  " effective_sinr: " << effectiveSinr <<
-				  " tbs_size: " << transportBlockSize
-				  << std::endl;
-#endif
-
-		  //create PDCCH messages
-		  for (int rb = 0; rb < flow->GetListOfAllocatedRBs ()->size (); rb++ )
-		    {
-			  pdcchMsg->AddNewRecord (PdcchMapIdealControlMessage::DOWNLINK,
-					  flow->GetListOfAllocatedRBs ()->at (rb),
-									  flow->GetBearer ()->GetDestination (),
-									  mcs);
-		    }
-	    }
-    }
-
-  if (pdcchMsg->GetMessage()->size () > 0)
-    {
-      GetMacEntity ()->GetDevice ()->GetPhy ()->SendIdealControlMessage (pdcchMsg);
-    }
-  delete pdcchMsg;
+//   if (pdcchMsg->GetMessage()->size () > 0)
+//     {
+//       GetMacEntity ()->GetDevice ()->GetPhy ()->SendIdealControlMessage (pdcchMsg);
+//     }
+//   delete pdcchMsg;
 }
 
+void
+DownlinkPacketScheduler::FinalizeScheduledFlows(void)
+{
+  int available_rbs = 0;
+  FlowsToSchedule* flows = GetFlowsToSchedule();
+  for (auto it = flows->begin (); it != flows->end (); it++) {
+    std::vector<int>* allocated_rbs = (*it)->GetListOfAllocatedRBs();
+    available_rbs += allocated_rbs->size();
+  }
+#ifdef SCHEDULER_DEBUG
+  std::cout << "RBsAllocation";
+  std::cout << ", available RBs " << available_rbs 
+    << ", flows " << flows->size ()
+    << std::endl;
+#endif
+  PdcchMapIdealControlMessage *pdcchMsg = new PdcchMapIdealControlMessage ();
+  // FlowsToSchedule* flows = schedulers[j]->GetFlowsToSchedule();
+  AMCModule* amc = GetMacEntity()->GetAmcModule();
+  for (auto it = flows->begin (); it != flows->end (); it++) {
+    FlowToSchedule *flow = (*it);
+    std::vector<int>* allocated_rbs = flow->GetListOfAllocatedRBs();
+    if (allocated_rbs->size() > 0) {
+      std::vector<double> sinr_values;
+      for(auto it = allocated_rbs->begin(); it != allocated_rbs->end(); it++) {
+        int rb_id = *it;
+        double sinr = amc->GetSinrFromCQI(
+            flow->GetCqiWithMuteFeedbacks().at(rb_id).final_cqi);
+        sinr_values.push_back(sinr);
+      }
+      double effective_sinr = GetEesmEffectiveSinr(sinr_values);
+      int mcs = amc->GetMCSFromCQI(amc->GetCQIFromSinr(effective_sinr));
+      int tbs_size = amc->GetTBSizeFromMCS(mcs, allocated_rbs->size());
+      flow->UpdateAllocatedBits(tbs_size);
+
+#ifdef SCHEDULER_DEBUG
+      std::cout << "\t\tflow "
+        << flow->GetBearer()->GetApplication()->GetApplicationID()
+        << " slice " << flow->GetBearer()->GetDestination()->GetSliceID()
+        << " nb_of_rbs: " << flow->GetListOfAllocatedRBs ()->size ()
+        << " eff_sinr: " << effective_sinr
+        << " tbs_size: " << tbs_size
+        << std::endl;
+#endif
+      for(auto it = allocated_rbs->begin(); it != allocated_rbs->end(); it++) {
+        pdcchMsg->AddNewRecord(
+            PdcchMapIdealControlMessage::DOWNLINK,
+            *it, flow->GetBearer()->GetDestination(), mcs
+            );
+      }
+    }
+  }
+  if (pdcchMsg->GetMessage()->size() > 0) {
+    GetMacEntity()->GetDevice()->GetPhy()->SendIdealControlMessage(pdcchMsg);
+  }
+  delete pdcchMsg;
+}
 
 void
 DownlinkPacketScheduler::UpdateAverageTransmissionRate (void)

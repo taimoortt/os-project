@@ -27,6 +27,7 @@
 #include <iostream>
 #include "NetworkManager.h"
 #include "../core/eventScheduler/simulator.h"
+#include "../protocolStack/mac/packet-scheduler/downlink-packet-scheduler.h"
 #include "TDDConfiguration.h"
 
 
@@ -119,6 +120,14 @@ public:
 
   void CentralResourceAllocation(void);
   void CentralDownlinkRBsAllocation(void);
+  void NVSAllocateOneRB(
+    std::vector<DownlinkPacketScheduler*>& schedulers,
+    int rb_id, bool enable_comp
+    );
+  void RadioSaberAllocateOneRB(
+    std::vector<DownlinkPacketScheduler*>& schedulers,
+    int rb_id, bool enable_comp
+    );
 };
 
 #endif /* FRAMEMANAGER_H_ */

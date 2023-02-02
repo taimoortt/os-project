@@ -45,7 +45,7 @@ struct CqiReport {
 
   CqiReport(int _cqi, int _cqi_with_mute, int _neighbor_cell)
   : cqi(_cqi), cqi_with_mute(_cqi_with_mute),
-    neighbor_cell(_neighbor_cell), final_cqi(0){}
+    neighbor_cell(_neighbor_cell), final_cqi(_cqi){}
 };
 
 class EnbMacEntity : public MacEntity

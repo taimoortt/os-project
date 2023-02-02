@@ -59,6 +59,7 @@ public:
 	virtual void DoStopSchedule (void);
 
 	virtual void RBsAllocation ();
+  virtual void FinalizeScheduledFlows(void);
 	virtual double ComputeSchedulingMetric (RadioBearer *bearer, double spectralEfficiency, int subChannel) = 0;
 
 	void UpdateAverageTransmissionRate (void);
