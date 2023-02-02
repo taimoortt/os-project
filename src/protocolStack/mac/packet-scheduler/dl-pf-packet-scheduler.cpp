@@ -37,6 +37,7 @@ DL_PF_PacketScheduler::DL_PF_PacketScheduler(std::string config_fname)
 : DownlinkPacketScheduler(config_fname) {
   SetMacEntity (0);
   CreateFlowsToSchedule ();
+  std::cout << "construct PF Downlink Scheduler." << std::endl;
 }
 
 DL_PF_PacketScheduler::~DL_PF_PacketScheduler()

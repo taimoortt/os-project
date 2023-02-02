@@ -69,6 +69,18 @@ NetworkNode::GetIDNetworkNode (void) const
 }
 
 void
+NetworkNode::SetSliceID(int id)
+{
+  m_sliceid = id;
+}
+
+int
+NetworkNode::GetSliceID(void) const
+{
+  return m_sliceid;
+}
+
+void
 NetworkNode::SetNodeType (NodeType type)
 {
   m_nodeType = type;

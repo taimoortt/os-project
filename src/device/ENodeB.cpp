@@ -32,6 +32,7 @@
 #include "../protocolStack/mac/packet-scheduler/dl-fls-packet-scheduler.h"
 #include "../protocolStack/mac/packet-scheduler/exp-rule-downlink-packet-scheduler.h"
 #include "../protocolStack/mac/packet-scheduler/log-rule-downlink-packet-scheduler.h"
+#include "../protocolStack/mac/packet-scheduler/nvs-downlink-scheduler.h"
 #include "../protocolStack/mac/packet-scheduler/enhanced-uplink-packet-scheduler.h"
 #include "../protocolStack/mac/packet-scheduler/roundrobin-uplink-packet-scheduler.h"
 #include "../phy/enb-lte-phy.h"
@@ -313,7 +314,7 @@ ENodeB::UserEquipmentRecord::GetUplinkChannelStatusIndicator (void) const
 }
 
 void
-ENodeB::SetDLScheduler (ENodeB::DLSchedulerType type)
+ENodeB::SetDLScheduler (ENodeB::DLSchedulerType type, std::string config_fname)
 {
   EnbMacEntity *mac = (EnbMacEntity*) GetProtocolStack ()->GetMacEntity ();
   PacketScheduler *scheduler;
@@ -354,6 +355,12 @@ ENodeB::SetDLScheduler (ENodeB::DLSchedulerType type)
       	scheduler->SetMacEntity (mac);
       	mac->SetDownlinkPacketScheduler (scheduler);
 		  break;
+
+      case ENodeB::DLScheduler_NVS:
+        scheduler = new NVSDownlinkScheduler(config_fname);
+        scheduler->SetMacEntity(mac);
+        mac->SetDownlinkPacketScheduler(scheduler);
+      break;
 
 	  default:
 	    std::cout << "ERROR: invalid scheduler type" << std::endl;

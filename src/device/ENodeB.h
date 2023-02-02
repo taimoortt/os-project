@@ -80,7 +80,8 @@ public:
 	    DLScheduler_TYPE_MLWDF,
 	    DLScheduler_TYPE_EXP,
 	    DLScheduler_LOG_RULE,
-	    DLScheduler_EXP_RULE
+	    DLScheduler_EXP_RULE,
+      DLScheduler_NVS
 	  };
 	enum ULSchedulerType
 	  {
@@ -103,7 +104,7 @@ public:
     UserEquipmentRecords* GetUserEquipmentRecords (void);
     UserEquipmentRecord* GetUserEquipmentRecord (int idUE);
 
-    void SetDLScheduler (DLSchedulerType type);
+    void SetDLScheduler (DLSchedulerType type, std::string config_fname="");
     PacketScheduler* GetDLScheduler (void) const;
     void SetULScheduler (ULSchedulerType type);
     PacketScheduler* GetULScheduler (void) const;

@@ -240,7 +240,7 @@ PacketScheduler::InsertFlowToSchedule (RadioBearer* bearer, int dataToTransmit,
   std::vector<CqiReport>& cqiWithMuteFeedbacks)
 {
 #ifdef SCHEDULER_DEBUG
-	std::cout << "\t  --> selected flow: "
+	std::cerr << "\t  --> selected flow: "
 			<< bearer->GetApplication ()->GetApplicationID ()
 			<< " " << dataToTransmit << std::endl;
 #endif

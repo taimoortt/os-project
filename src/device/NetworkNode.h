@@ -61,6 +61,7 @@ public:
 
 private:
 	int m_idNetworkNode;
+  int m_sliceid;
 	NodeState m_state;
 	NodeType m_nodeType;
 
@@ -82,6 +83,9 @@ public:
 
 	void SetIDNetworkNode (int id);
 	int GetIDNetworkNode (void) const;
+
+  void SetSliceID(int id);
+  int GetSliceID(void) const;
 
 	void SetNodeType (NodeType type);
 	NodeType GetNodeType (void) const;

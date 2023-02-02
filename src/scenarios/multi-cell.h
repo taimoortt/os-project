@@ -47,7 +47,7 @@
 #include <fstream>
 #include <stdlib.h>
 #include <cstring>
-
+#include <string>
 
 static void MultiCell (int nbCell, double radius,
                        int nbUE,
@@ -55,13 +55,14 @@ static void MultiCell (int nbCell, double radius,
                        int sched_type,
                        int frame_struct,
                        int speed,
-		               double maxDelay, int videoBitRate,
+		                   double maxDelay, int videoBitRate,
+                       std::string config_fname,
                        int seed)
 {
 
   // define simulation times
-  double duration = 0.5;
-  double flow_duration = 0.5;
+  double duration = 10;
+  double flow_duration = 10;
 
   int cluster = 3;
   double bandwidth = 20;
@@ -111,6 +112,10 @@ static void MultiCell (int nbCell, double radius,
   	    downlink_scheduler_type = ENodeB::DLScheduler_LOG_RULE;
   	    std::cout << "Scheduler LOG RULE "<< std::endl;
 	    break;
+      case 7:
+        downlink_scheduler_type = ENodeB::DLScheduler_NVS;
+        std::cout << "Scheduler NVS in multi cells" << std::endl;
+      break;
       default:
 	    downlink_scheduler_type = ENodeB::DLScheduler_TYPE_PROPORTIONAL_FAIR;
 	    break;
@@ -177,7 +182,7 @@ static void MultiCell (int nbCell, double radius,
 	  enb->GetPhy ()->SetDlChannel (dlChannels->at (i));
 	  enb->GetPhy ()->SetUlChannel (ulChannels->at (i));
 
-      enb->SetDLScheduler (downlink_scheduler_type);
+    enb->SetDLScheduler (downlink_scheduler_type, config_fname);
 
 	  enb->GetPhy ()->SetBandwidthManager (spectrums.at (i));
 
@@ -243,6 +248,12 @@ static void MultiCell (int nbCell, double radius,
 												 1, //HO activated!
                          Mobility::CONSTANT_POSITION);
 												 //Mobility::RANDOM_DIRECTION);
+        if (idUE % 2 == 0) {
+          ue->SetSliceID(0);
+        }
+        else {
+          ue->SetSliceID(1);
+        }
 
 		  std::cout << "Created UE - id " << idUE << " position " << posX << " " << posY
 				  << ", cell " <<  ue->GetCell ()->GetIdCell ()

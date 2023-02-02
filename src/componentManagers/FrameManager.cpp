@@ -393,9 +393,9 @@ FrameManager::CentralDownlinkRBsAllocation(void)
     schedulers[j]->UpdateAverageTransmissionRate();
     schedulers[j]->SelectFlowsToSchedule();
   }
-  std::vector<std::unordered_set<int>> mute_rbs_cells;
-  for (int i = 0; i < nb_of_rbs; i++) {
-    mute_rbs_cells.emplace_back();
+  if (schedulers.size() == 0) return;
+  AMCModule* amc = schedulers[0]->GetMacEntity()->GetAmcModule();
+  for (int rb_id = 0; rb_id < nb_of_rbs; rb_id++) {
     // metrics[j][k] is the scheduling metric of the k-th flow in j-th cell
     std::vector<std::vector<double>> metrics;
     for (int j = 0; j < schedulers.size(); j++) {
@@ -404,23 +404,72 @@ FrameManager::CentralDownlinkRBsAllocation(void)
       for (int k = 0; k < flows->size(); k++) {
         double metric = schedulers[j]->ComputeSchedulingMetric(
             flows->at(k)->GetBearer(),
-            flows->at(k)->GetSpectralEfficiency().at(i),
-            i);
+            flows->at(k)->GetSpectralEfficiency().at(rb_id),
+            rb_id);
         metrics[j].push_back(metric);
       }
     }
     std::unordered_set<int> cells_muted;
     std::unordered_set<int> cells_allocated;
+    // while (true) {
+    //   // allocate rb_id-th rb to a specific flow in a specific cell in greedy
+    //   // we consider the limited queue of every flow in the future
+    //   int schedule_cell_id = -1;
+    //   int schedule_flow_id = -1;
+    //   double target_metric = -1;
+    //   FlowToSchedule* schedule_flow = nullptr;
+    //   for (int j = 0; j < schedulers.size(); j++) {
+    //     if (cells_muted.find(j) != cells_muted.end() ||
+    //         cells_allocated.find(j) != cells_allocated.end()) {
+    //       continue;
+    //     }
+    //     FlowsToSchedule* flows = schedulers[j]->GetFlowsToSchedule();
+    //     for (int k = 0; k < flows->size(); k++) {
+    //       if (metrics[j][k] >= target_metric) { 
+    //         target_metric = metrics[j][k];
+    //         schedule_cell_id = j;
+    //         schedule_flow_id = k;
+    //         schedule_flow = flows->at(k);
+    //       }
+    //     }
+    //   }
+    //   if (schedule_cell_id == -1) {
+    //     // all cells are allocated
+    //     break;
+    //   }
+    //   schedule_flow->GetListOfAllocatedRBs()->push_back(rb_id);
+    //   std::vector<CqiReport>& cqi_with_mute =
+    //     schedule_flow->GetCqiWithMuteFeedbacks();
+    //   cells_allocated.insert(schedule_cell_id);
+    //   int mute_cell_id = cqi_with_mute[rb_id].neighbor_cell;
+
+    //   cqi_with_mute[rb_id].final_cqi = cqi_with_mute[rb_id].cqi;
+
+    //   // condition to apply muting, currently always mute
+    //   if (mute_cell_id != -1) {
+    //     if (cells_allocated.find(mute_cell_id) != cells_allocated.end()) {
+    //       // cannot mute, apply the original cqi
+    //       cqi_with_mute[rb_id].final_cqi = cqi_with_mute[rb_id].cqi;
+    //     }
+    //     else {
+    //       if (cells_muted.find(mute_cell_id) == cells_muted.end()) {
+    //         cells_muted.insert(mute_cell_id);
+    //       }
+    //       // apply the cqi_with_mute
+    //       cqi_with_mute[rb_id].final_cqi = cqi_with_mute[rb_id].cqi_with_mute;
+    //     }
+    //   }
+
+    std::vector<FlowToSchedule*> cell_flows(schedulers.size(), nullptr);
+    std::vector<int> cell_byorder;
     while (true) {
-      // allocate i-th rb to a specific flow in a specific cell in greedy
+      // allocate rb_id-th rb to a specific flow in a specific cell in greedy
       // we consider the limited queue of every flow in the future
       int schedule_cell_id = -1;
-      int schedule_flow_id = -1;
       double target_metric = -1;
       FlowToSchedule* schedule_flow = nullptr;
       for (int j = 0; j < schedulers.size(); j++) {
-        if (cells_muted.find(j) != cells_muted.end() ||
-            cells_allocated.find(j) != cells_allocated.end()) {
+        if (cells_allocated.find(j) != cells_allocated.end()) {
           continue;
         }
         FlowsToSchedule* flows = schedulers[j]->GetFlowsToSchedule();
@@ -428,7 +477,6 @@ FrameManager::CentralDownlinkRBsAllocation(void)
           if (metrics[j][k] >= target_metric) { 
             target_metric = metrics[j][k];
             schedule_cell_id = j;
-            schedule_flow_id = k;
             schedule_flow = flows->at(k);
           }
         }
@@ -437,39 +485,65 @@ FrameManager::CentralDownlinkRBsAllocation(void)
         // all cells are allocated
         break;
       }
-      schedule_flow->GetListOfAllocatedRBs()->push_back(i);
-      std::vector<CqiReport>& cqi_with_mute =
-        schedule_flow->GetCqiWithMuteFeedbacks();
       cells_allocated.insert(schedule_cell_id);
-      int mute_cell_id = cqi_with_mute[i].neighbor_cell;
-
-      cqi_with_mute[i].final_cqi = cqi_with_mute[i].cqi;
-
-      // condition to apply muting, currently always mute
-      if (mute_cell_id != -1) {
-        if (cells_allocated.find(mute_cell_id) != cells_allocated.end()) {
-          // cannot mute, apply the original cqi
-          cqi_with_mute[i].final_cqi = cqi_with_mute[i].cqi;
+      cell_flows[schedule_cell_id] = schedule_flow;
+      cell_byorder.push_back(schedule_cell_id);
+    }
+    // TBC: compare the TBS and decide muting
+    cells_allocated.clear();
+    for (int j = 0; j < cell_byorder.size(); j++) {
+      int cell_id = cell_byorder[j];
+      if (cells_muted.find(cell_id) != cells_muted.end()) {
+        continue; // the cell is muted, skip
+      }
+      FlowToSchedule* flow = cell_flows[cell_id];
+      CqiReport& cqi_report = flow->GetCqiWithMuteFeedbacks().at(rb_id);
+      int tbs_with_mute = amc->GetTBSizeFromMCS(
+        amc->GetMCSFromCQI(cqi_report.cqi_with_mute));
+      int tbs = amc->GetTBSizeFromMCS(amc->GetMCSFromCQI(cqi_report.cqi));
+      FlowToSchedule* another_flow = cell_flows[cqi_report.neighbor_cell];
+      CqiReport another_report = another_flow->GetCqiWithMuteFeedbacks().at(rb_id);
+      int tbs_another = amc->GetTBSizeFromMCS(amc->GetMCSFromCQI(another_report.cqi));
+      cqi_report.final_cqi = cqi_report.cqi;
+#ifdef COMP_MUTING
+      if (cells_allocated.find(cqi_report.neighbor_cell) == cells_allocated.end()) {
+        if (cells_muted.find(cqi_report.neighbor_cell) != cells_muted.end()) {
+          cqi_report.final_cqi = cqi_report.cqi_with_mute;
         }
-        else {
-          if (cells_muted.find(mute_cell_id) == cells_muted.end()) {
-            cells_muted.insert(mute_cell_id);
-          }
-          // apply the cqi_with_mute
-          cqi_with_mute[i].final_cqi = cqi_with_mute[i].cqi_with_mute;
+        else if (tbs_with_mute > tbs_another + tbs) {
+#ifdef SCHEDULER_DEBUG
+          std::cout << "Mute cell " << cqi_report.neighbor_cell
+            << " rb " << rb_id << " for flow "
+            << flow->GetBearer()->GetApplication()->GetApplicationID()
+            << " tbs_with_mute: " << tbs_with_mute
+            << " original_tbs: " << tbs
+            << " another_tbs: " << tbs_another << std::endl;
+#endif
+          cells_muted.insert(cqi_report.neighbor_cell);
+          cqi_report.final_cqi = cqi_report.cqi_with_mute;
         }
       }
+#endif
+      // make sure we've updated the ref instead of the localvar
+      flow->GetListOfAllocatedRBs()->push_back(rb_id);
+      cells_allocated.insert(cell_id);
     }
   }
   for (int j = 0; j < schedulers.size(); j++) {
+    int available_rbs = 0;
+    FlowsToSchedule* flows = schedulers[j]->GetFlowsToSchedule();
+    for (auto it = flows->begin (); it != flows->end (); it++) {
+      std::vector<int>* allocated_rbs = (*it)->GetListOfAllocatedRBs();
+      available_rbs += allocated_rbs->size();
+    }
 #ifdef SCHEDULER_DEBUG
-	  std::cout << " ---- RBsAllocation";
-    std::cout << ", available RBs " << nb_of_rbs 
+	  std::cout << "RBsAllocation";
+    std::cout << ", available RBs " << available_rbs 
       << ", flows " << schedulers[j]->GetFlowsToSchedule()->size ()
       << std::endl;
 #endif
     PdcchMapIdealControlMessage *pdcchMsg = new PdcchMapIdealControlMessage ();
-    FlowsToSchedule* flows = schedulers[j]->GetFlowsToSchedule();
+    // FlowsToSchedule* flows = schedulers[j]->GetFlowsToSchedule();
     AMCModule* amc = schedulers[j]->GetMacEntity()->GetAmcModule();
     for (auto it = flows->begin (); it != flows->end (); it++) {
       FlowToSchedule *flow = (*it);
@@ -489,11 +563,11 @@ FrameManager::CentralDownlinkRBsAllocation(void)
         flow->UpdateAllocatedBits(tbs_size);
 
 #ifdef SCHEDULER_DEBUG
-        std::cout << "\t\t --> flow "
+        std::cout << "\t\tflow "
           << flow->GetBearer()->GetApplication()->GetApplicationID()
-          << " has been scheduled:"
-          << " nb_of_RBs: " << flow->GetListOfAllocatedRBs ()->size ()
-          << " effective_sinr: " << effective_sinr
+          << " slice " << flow->GetBearer()->GetDestination()->GetSliceID()
+          << " nb_of_rbs: " << flow->GetListOfAllocatedRBs ()->size ()
+          << " eff_sinr: " << effective_sinr
           << " tbs_size: " << tbs_size
           << std::endl;
 #endif

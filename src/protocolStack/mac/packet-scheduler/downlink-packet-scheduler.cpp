@@ -88,7 +88,7 @@ DownlinkPacketScheduler::~DownlinkPacketScheduler()
 void DownlinkPacketScheduler::SelectFlowsToSchedule ()
 {
 #ifdef SCHEDULER_DEBUG
-	std::cout << "\t Select Flows to schedule" << std::endl;
+	std::cerr << "\t Select Flows to schedule" << std::endl;
 #endif
 
   ClearFlowsToSchedule ();

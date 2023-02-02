@@ -16,6 +16,7 @@ NVSDownlinkScheduler::NVSDownlinkScheduler(std::string config_fname)
 : DownlinkPacketScheduler(config_fname) {
   SetMacEntity (0);
   CreateFlowsToSchedule ();
+  std::cout << "construct NVS Downlink Scheduler." << std::endl;
 }
 
 NVSDownlinkScheduler::~NVSDownlinkScheduler()
@@ -36,9 +37,12 @@ NVSDownlinkScheduler::SelectFlowsToSchedule()
 	{
 	  //SELECT FLOWS TO SCHEDULE
 	  RadioBearer *bearer = (*it);
-    int user_id = bearer->GetUserID();
-    if (slice_ctx_.user_to_slice_[user_id] != current_slice_)
+    int slice_id = bearer->GetDestination()->GetSliceID();
+    if (slice_id != current_slice_)
       continue;
+    // int user_id = bearer->GetUserID();
+    // if (slice_ctx_.user_to_slice_[user_id] != current_slice_)
+    //   continue;
 
 	  if (bearer->HasPackets () &&
       bearer->GetDestination ()->GetNodeState () == NetworkNode::STATE_ACTIVE)
@@ -86,7 +90,8 @@ int NVSDownlinkScheduler::SelectSliceToServe()
   std::vector<bool> slice_with_queue(slice_ctx_.num_slices_, false);
   for (auto it = bearers->begin(); it != bearers->end(); it++) {
     RadioBearer *bearer = (*it);
-    int user_id = bearer->GetUserID();
+    // int user_id = bearer->GetUserID();
+    int ue_slice = bearer->GetDestination()->GetSliceID();
 
     if (bearer->HasPackets () && 
       bearer->GetDestination()->GetNodeState () == NetworkNode::STATE_ACTIVE)
@@ -100,7 +105,8 @@ int NVSDownlinkScheduler::SelectSliceToServe()
 			  dataToTransmit = bearer->GetQueueSize ();
 			}
       if (dataToTransmit > 0) {
-        slice_with_queue[slice_ctx_.user_to_slice_[user_id]] = true;
+        // slice_with_queue[slice_ctx_.user_to_slice_[user_id]] = true;
+        slice_with_queue[ue_slice] = true;
       }
     }
   }

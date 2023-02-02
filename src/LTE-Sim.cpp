@@ -58,6 +58,7 @@
 #include <fstream>
 #include <stdlib.h>
 #include <cstring>
+#include <string>
 
 int
 main (int argc, char *argv[])
@@ -146,11 +147,12 @@ main (int argc, char *argv[])
 	      int frame_struct = atoi(argv[10]);
 	      int speed = atoi(argv[11]);
 	      double maxDelay = atof(argv[12]);
-		  int video_bit_rate = atoi(argv[13]);
-	      int seed;
-	      if (argc==15) seed = atoi(argv[14]);
-	      else seed = -1;
-	      MultiCell (nbCells, radius, nbUE, nbVoIP, nbVideo, nbBE, nbCBR, sched_type, frame_struct, speed, maxDelay, video_bit_rate, seed);
+		    int video_bit_rate = atoi(argv[13]);
+        std::string config_fname = std::string(argv[14]);
+	      int seed = -1;
+	      if (argc==16)
+          seed = atoi(argv[15]);
+	      MultiCell (nbCells, radius, nbUE, nbVoIP, nbVideo, nbBE, nbCBR, sched_type, frame_struct, speed, maxDelay, video_bit_rate, config_fname, seed);
 	    }
 
 	  if (strcmp(argv[1], "SingleCellWithFemto")==0)

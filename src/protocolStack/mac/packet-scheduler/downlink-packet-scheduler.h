@@ -54,7 +54,7 @@ public:
 	DownlinkPacketScheduler(std::string config_fname="");
 	virtual ~DownlinkPacketScheduler();
 
-	void SelectFlowsToSchedule ();
+	virtual void SelectFlowsToSchedule ();
 
 	virtual void DoSchedule (void);
 	virtual void DoStopSchedule (void);
