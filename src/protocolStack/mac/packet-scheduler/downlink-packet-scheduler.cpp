@@ -50,15 +50,6 @@ DownlinkPacketScheduler::DownlinkPacketScheduler(std::string config_fname)
   Json::Value obj;
   reader.parse(ifs, obj);
   ifs.close();
-  const Json::Value& ues_per_slice = obj["ues_per_slice"];
-  slice_ctx_.num_slices_ = ues_per_slice.size();
-  int num_ue;
-  for (int i = 0; i < slice_ctx_.num_slices_; i++) {
-    num_ue = ues_per_slice[i].asInt();
-    for (int j = 0; j < num_ue; j++) {
-      slice_ctx_.user_to_slice_.push_back(i);
-    }
-  }
   const Json::Value& slice_schemes = obj["slices"];
   for (int i = 0; i < slice_schemes.size(); i++) {
     int n_slices = slice_schemes[i]["n_slices"].asInt();

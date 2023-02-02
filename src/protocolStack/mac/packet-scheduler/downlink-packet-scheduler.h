@@ -42,7 +42,6 @@ struct SliceContext {
 
 public:
   int                             num_slices_ = 1;
-  std::vector<int>                user_to_slice_;
   std::vector<double>             weights_;
   std::vector<SchedulerAlgo>      algo_params_;
   std::vector<int>                priority_;
