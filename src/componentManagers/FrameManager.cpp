@@ -395,6 +395,7 @@ FrameManager::CentralDownlinkRBsAllocation(void)
   }
   if (schedulers.size() == 0) return;
   AMCModule* amc = schedulers[0]->GetMacEntity()->GetAmcModule();
+  bool enable_comp = schedulers[0]->enable_comp_;
   for (int rb_id = 0; rb_id < nb_of_rbs; rb_id++) {
     // metrics[j][k] is the scheduling metric of the k-th flow in j-th cell
     std::vector<std::vector<double>> metrics;
@@ -489,7 +490,7 @@ FrameManager::CentralDownlinkRBsAllocation(void)
       cell_flows[schedule_cell_id] = schedule_flow;
       cell_byorder.push_back(schedule_cell_id);
     }
-    // TBC: compare the TBS and decide muting
+    // compare the TBS and decide muting
     cells_allocated.clear();
     for (int j = 0; j < cell_byorder.size(); j++) {
       int cell_id = cell_byorder[j];
@@ -498,19 +499,27 @@ FrameManager::CentralDownlinkRBsAllocation(void)
       }
       FlowToSchedule* flow = cell_flows[cell_id];
       CqiReport& cqi_report = flow->GetCqiWithMuteFeedbacks().at(rb_id);
+      cqi_report.final_cqi = cqi_report.cqi;
+      flow->GetListOfAllocatedRBs()->push_back(rb_id);
+      cells_allocated.insert(cell_id);
+      // no neighbor cell or comp disabled, skip
+      if (cqi_report.neighbor_cell == -1 || !enable_comp) {
+        continue;
+      }
+      // Muting logic
       int tbs_with_mute = amc->GetTBSizeFromMCS(
         amc->GetMCSFromCQI(cqi_report.cqi_with_mute));
       int tbs = amc->GetTBSizeFromMCS(amc->GetMCSFromCQI(cqi_report.cqi));
       FlowToSchedule* another_flow = cell_flows[cqi_report.neighbor_cell];
       CqiReport another_report = another_flow->GetCqiWithMuteFeedbacks().at(rb_id);
       int tbs_another = amc->GetTBSizeFromMCS(amc->GetMCSFromCQI(another_report.cqi));
-      cqi_report.final_cqi = cqi_report.cqi;
-#ifdef COMP_MUTING
+
+      // if the neighbor cell is not allocated
       if (cells_allocated.find(cqi_report.neighbor_cell) == cells_allocated.end()) {
         if (cells_muted.find(cqi_report.neighbor_cell) != cells_muted.end()) {
           cqi_report.final_cqi = cqi_report.cqi_with_mute;
         }
-        else if (tbs_with_mute > tbs_another + tbs) {
+        else if (tbs_with_mute > 1.0 * (tbs_another + tbs)) {
 #ifdef SCHEDULER_DEBUG
           std::cout << "Mute cell " << cqi_report.neighbor_cell
             << " rb " << rb_id << " for flow "
@@ -523,10 +532,6 @@ FrameManager::CentralDownlinkRBsAllocation(void)
           cqi_report.final_cqi = cqi_report.cqi_with_mute;
         }
       }
-#endif
-      // make sure we've updated the ref instead of the localvar
-      flow->GetListOfAllocatedRBs()->push_back(rb_id);
-      cells_allocated.insert(cell_id);
     }
   }
   for (int j = 0; j < schedulers.size(); j++) {
@@ -553,8 +558,7 @@ FrameManager::CentralDownlinkRBsAllocation(void)
         for(auto it = allocated_rbs->begin(); it != allocated_rbs->end(); it++) {
           int rb_id = *it;
           double sinr = amc->GetSinrFromCQI(
-              flow->GetCqiWithMuteFeedbacks().at(rb_id).final_cqi
-              );
+              flow->GetCqiWithMuteFeedbacks().at(rb_id).final_cqi);
           sinr_values.push_back(sinr);
         }
         double effective_sinr = GetEesmEffectiveSinr(sinr_values);

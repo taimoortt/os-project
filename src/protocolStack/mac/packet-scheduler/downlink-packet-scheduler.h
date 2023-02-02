@@ -65,6 +65,7 @@ public:
 	void UpdateAverageTransmissionRate (void);
 
   SliceContext  slice_ctx_;
+  bool          enable_comp_;
 
 };
 

@@ -57,7 +57,7 @@ GetUniformUsersDistribution (int idCell, int nbUE)
   for (int i = 0; i < nbUE; i++)
     {
 	  // r = (double)(rand() %(int)radius);
-    r = (cell->GetRadius()*1000) * 2.732;
+    r = (double) (rand() % (int)(cell->GetRadius()*1000) * 2.732);
 	  angle = (double)(rand() %360) * ((2*3.14)/360);
 
 	  CartesianCoordinates *newCoordinates = GetCartesianCoordinatesFromPolar (r, angle);
