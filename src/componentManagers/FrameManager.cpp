@@ -34,6 +34,7 @@
 #include "../phy/enb-lte-phy.h"
 #include <cassert>
 #include <unordered_set>
+#include "../protocolStack/mac/packet-scheduler/radiosaber-downlink-scheduler.h"
 
 FrameManager* FrameManager::ptr=NULL;
 
@@ -392,8 +393,16 @@ FrameManager::CentralDownlinkRBsAllocation(void)
   }
   if (schedulers.size() == 0) return;
   bool enable_comp = schedulers[0]->enable_comp_;
+  // for (int rb_id = 0; rb_id < nb_of_rbs; rb_id++) {
+  //   NVSAllocateOneRB(schedulers, rb_id, enable_comp);
+  // }
+  for (auto it = schedulers.begin(); it != schedulers.end(); it++) {
+    RadioSaberDownlinkScheduler* scheduler =
+      dynamic_cast<RadioSaberDownlinkScheduler*>(*it);
+    scheduler->CalculateSliceQuota();
+  }
   for (int rb_id = 0; rb_id < nb_of_rbs; rb_id++) {
-    NVSAllocateOneRB(schedulers, rb_id, enable_comp);
+    RadioSaberAllocateOneRB(schedulers, rb_id, enable_comp);
   }
   for (int j = 0; j < schedulers.size(); j++) {
     schedulers[j]->FinalizeScheduledFlows();
@@ -499,6 +508,42 @@ void
 FrameManager::RadioSaberAllocateOneRB(
     std::vector<DownlinkPacketScheduler*>& schedulers,
     int rb_id, bool enable_comp) {
-  // TBC
-
+  AMCModule* amc = schedulers[0]->GetMacEntity()->GetAmcModule();
+  for (auto it_s = schedulers.begin(); it_s != schedulers.end(); it_s++) {
+    RadioSaberDownlinkScheduler* scheduler = (RadioSaberDownlinkScheduler*)(*it_s);
+    FlowsToSchedule* flows = scheduler->GetFlowsToSchedule();
+    int num_slice = scheduler->slice_ctx_.num_slices_;
+    std::vector<FlowToSchedule*> slice_flow(num_slice, nullptr);
+    std::vector<double> slice_spectraleff(num_slice, -1);
+    std::vector<int> max_metrics(num_slice, -1);
+    // calcualte the metrics and get the scheduled flow in every slice
+    for (auto it = flows->begin(); it != flows->end(); it++) {
+      FlowToSchedule* flow = *it;
+      double metric = scheduler->ComputeSchedulingMetric(
+          flow->GetBearer(),
+          flow->GetSpectralEfficiency().at(rb_id),
+          rb_id);
+      int slice_id = flow->GetSliceID();
+      // enterprise schedulers
+      if (metric > max_metrics[slice_id]) {
+        max_metrics[slice_id] = metric;
+        slice_flow[slice_id] = flow;
+        slice_spectraleff[slice_id] = flow->GetSpectralEfficiency().at(rb_id);
+      }
+    }
+    double max_slice_spectraleff = -1;
+    FlowToSchedule* selected_flow = nullptr;
+    for (int i = 0; i < num_slice; i++) {
+      if (slice_spectraleff[i] > max_slice_spectraleff
+        && scheduler->slice_target_rbs_[i] > 0) {
+        max_slice_spectraleff = slice_spectraleff[i];
+        selected_flow = slice_flow[i];
+      }
+    }
+    if (selected_flow) {
+      selected_flow->GetListOfAllocatedRBs()->push_back(rb_id);
+      scheduler->slice_target_rbs_[selected_flow->GetSliceID()] -= 1;
+    }
+  }
+  // after allocation of one RB, reduce the slice_target_rbs_ by one;
 }

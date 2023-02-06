@@ -34,10 +34,9 @@ class CqiReport;
 
 struct FlowToSchedule
 {
-  FlowToSchedule(RadioBearer* bearer,
-      int dataToTransmit);
-  virtual ~FlowToSchedule();
+private:
   RadioBearer* m_bearer;
+  int m_sliceID;
   int m_allocatedBits;		//bits
   int m_transmittedData;	//bytes
   int m_dataToTransmit;		//bytes
@@ -48,6 +47,10 @@ struct FlowToSchedule
   std::vector<int> m_cqiFeedbacks;
   std::vector<CqiReport> m_cqiWithMuteFeedbacks;
 
+public:
+  FlowToSchedule(RadioBearer* bearer,
+      int dataToTransmit);
+  virtual ~FlowToSchedule();
   RadioBearer* GetBearer (void);
 
   void UpdateAllocatedBits (int allocatedBits);
@@ -66,6 +69,9 @@ struct FlowToSchedule
   std::vector<int>& GetCqiFeedbacks (void);
   void SetCqiWithMuteFeedbacks(std::vector<CqiReport>& cqi_withmute_feedbacks);
   std::vector<CqiReport>& GetCqiWithMuteFeedbacks(void);
+
+  void SetSliceID(int slice_id) {m_sliceID = slice_id;}
+  int GetSliceID() {return m_sliceID;}
 
   bool IsMuteRequested(int i);
 };

@@ -81,7 +81,8 @@ public:
 	    DLScheduler_TYPE_EXP,
 	    DLScheduler_LOG_RULE,
 	    DLScheduler_EXP_RULE,
-      DLScheduler_NVS
+      DLScheduler_NVS,
+      DLScheduler_RADIOSABER
 	  };
 	enum ULSchedulerType
 	  {

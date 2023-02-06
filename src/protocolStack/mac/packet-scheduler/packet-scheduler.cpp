@@ -249,6 +249,7 @@ PacketScheduler::InsertFlowToSchedule (RadioBearer* bearer, int dataToTransmit,
   flowToSchedule->SetSpectralEfficiency (specEff);
   flowToSchedule->SetCqiFeedbacks (cqiFeedbacks);
   flowToSchedule->SetCqiWithMuteFeedbacks(cqiWithMuteFeedbacks);
+  flowToSchedule->SetSliceID(bearer->GetDestination()->GetSliceID());
 
   GetFlowsToSchedule ()->push_back(flowToSchedule);
 }

@@ -117,6 +117,10 @@ static void MultiCell (int nbCell, double radius,
       downlink_scheduler_type = ENodeB::DLScheduler_NVS;
       std::cout << "Scheduler NVS in multi cells" << std::endl;
       break;
+    case 8:
+      downlink_scheduler_type = ENodeB::DLScheduler_RADIOSABER;
+      std::cout << "Scheduler RadioSaber in multi cells" << std::endl;
+      break;
     default:
       downlink_scheduler_type = ENodeB::DLScheduler_TYPE_PROPORTIONAL_FAIR;
       break;

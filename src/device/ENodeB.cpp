@@ -33,6 +33,7 @@
 #include "../protocolStack/mac/packet-scheduler/exp-rule-downlink-packet-scheduler.h"
 #include "../protocolStack/mac/packet-scheduler/log-rule-downlink-packet-scheduler.h"
 #include "../protocolStack/mac/packet-scheduler/nvs-downlink-scheduler.h"
+#include "../protocolStack/mac/packet-scheduler/radiosaber-downlink-scheduler.h"
 #include "../protocolStack/mac/packet-scheduler/enhanced-uplink-packet-scheduler.h"
 #include "../protocolStack/mac/packet-scheduler/roundrobin-uplink-packet-scheduler.h"
 #include "../phy/enb-lte-phy.h"
@@ -358,6 +359,12 @@ ENodeB::SetDLScheduler (ENodeB::DLSchedulerType type, std::string config_fname)
 
       case ENodeB::DLScheduler_NVS:
         scheduler = new NVSDownlinkScheduler(config_fname);
+        scheduler->SetMacEntity(mac);
+        mac->SetDownlinkPacketScheduler(scheduler);
+      break;
+
+      case ENodeB::DLScheduler_RADIOSABER:
+        scheduler = new RadioSaberDownlinkScheduler(config_fname);
         scheduler->SetMacEntity(mac);
         mac->SetDownlinkPacketScheduler(scheduler);
       break;
