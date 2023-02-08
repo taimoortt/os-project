@@ -12,6 +12,7 @@
 #include "../../../core/spectrum/bandwidth-manager.h"
 #include "../../../core/idealMessages/ideal-control-messages.h"
 #include <cassert>
+#include <unordered_set>
 
 using SchedulerAlgo = SliceContext::SchedulerAlgo;
 
@@ -34,35 +35,33 @@ void RadioSaberDownlinkScheduler::CalculateSliceQuota()
   int nb_rbs = GetMacEntity()->GetDevice()->GetPhy()
     ->GetBandwidthManager()->GetDlSubChannels().size();
   FlowsToSchedule* flows = GetFlowsToSchedule();
-  std::vector<bool> slice_with_data(slice_ctx_.num_slices_, false);
+  std::unordered_set<int> slice_with_data;
   std::fill(slice_target_rbs_.begin(), slice_target_rbs_.end(), 0);
-  int num_nonempty_slices = 0;
   int extra_rbs = nb_rbs;
   for (auto it = flows->begin(); it != flows->end(); ++it) {
     assert(*it != nullptr);
     int slice_id = (*it)->GetSliceID();
-    if (slice_with_data[slice_id])
+    if (slice_with_data.find(slice_id) != slice_with_data.end()) {
       continue;
-    num_nonempty_slices += 1;
-    slice_with_data[slice_id] = true;
+    }
+    slice_with_data.insert(slice_id);
     slice_target_rbs_[slice_id] = (int)(nb_rbs * slice_ctx_.weights_[slice_id]
       + slice_rbs_offset_[slice_id]);
     extra_rbs -= slice_target_rbs_[slice_id];
   }
-  if (num_nonempty_slices == 0)
+  if (slice_with_data.size() == 0)
     return;
-  // we enable reallocation between slices, but not flows
-  bool is_first_slice = true;
-  int rand_begin_idx = rand();
-  for (int i = 0; i < slice_ctx_.num_slices_; ++i) {
-    int k = (i + rand_begin_idx) % slice_ctx_.num_slices_;
-    if (slice_with_data[k]) {
-      slice_target_rbs_[k] += extra_rbs / num_nonempty_slices;
-      if (is_first_slice) {
-        slice_target_rbs_[k] += extra_rbs % num_nonempty_slices;
-        is_first_slice = false;
-      }
+  // we reallocate extra rbs to slices; a random slice gets extra_rbs % num_slice
+  int rand_idx = rand() % slice_with_data.size();
+  for (auto it = slice_with_data.begin(); it != slice_with_data.end(); it++) {
+    int slice_id = *it;
+    slice_target_rbs_[slice_id] = extra_rbs / slice_with_data.size();
+    if (rand_idx == 0) {
+      slice_target_rbs_[slice_id] += extra_rbs % slice_with_data.size();
     }
+    rand_idx -= 1;
+    // caculate the offset for next TTI
+    slice_rbs_offset_[slice_id] = 0; // since we consider rbg in the future
   }
 }
 

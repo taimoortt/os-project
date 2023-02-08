@@ -368,34 +368,38 @@ FrameManager::CentralDownlinkRBsAllocation(void)
   std::vector<ENodeB*> *enodebs =
     GetNetworkManager ()->GetENodeBContainer ();
   std::vector<DownlinkPacketScheduler*> schedulers;
-  // Assume that every eNB has same number of RBs
-  int nb_of_rbs = 0;
   // initialization
   for (auto it = enodebs->begin(); it != enodebs->end(); it++) {
     ENodeB* enb = *it;
     DownlinkPacketScheduler* scheduler =
       (DownlinkPacketScheduler*)enb->GetDLScheduler();
     assert(scheduler != NULL);
-    int cell_rbs = scheduler->GetMacEntity()->GetDevice()->GetPhy()
-      ->GetBandwidthManager()->GetDlSubChannels().size (); 
-    if (nb_of_rbs == 0) {
-      nb_of_rbs = cell_rbs;
-    }
-    else {
-      assert(nb_of_rbs == cell_rbs);
-    }
     schedulers.push_back(scheduler);
   }
   // set up schedulers
+  bool available_flow = false;
   for (int j = 0; j < schedulers.size(); j++) {
     schedulers[j]->UpdateAverageTransmissionRate();
     schedulers[j]->SelectFlowsToSchedule();
+    if (schedulers[j]->GetFlowsToSchedule()->size() > 0) {
+      available_flow = true;
+    }
   }
-  if (schedulers.size() == 0) return;
+  // if no flow is available in any slice, stop schedulers
+  if (!available_flow) {
+    for (int j = 0; j < schedulers.size(); j++)
+      schedulers[j]->StopSchedule();
+    return;
+  }
+  // Assume that every eNB has same number of RBs
+  int nb_of_rbs = schedulers[0]->GetMacEntity()->GetDevice()->GetPhy()
+      ->GetBandwidthManager()->GetDlSubChannels().size ();
   bool enable_comp = schedulers[0]->enable_comp_;
+  // // NVS allocation
   // for (int rb_id = 0; rb_id < nb_of_rbs; rb_id++) {
   //   NVSAllocateOneRB(schedulers, rb_id, enable_comp);
   // }
+  // Baseline1 allocation
   for (auto it = schedulers.begin(); it != schedulers.end(); it++) {
     RadioSaberDownlinkScheduler* scheduler =
       dynamic_cast<RadioSaberDownlinkScheduler*>(*it);
@@ -404,6 +408,23 @@ FrameManager::CentralDownlinkRBsAllocation(void)
   for (int rb_id = 0; rb_id < nb_of_rbs; rb_id++) {
     RadioSaberAllocateOneRB(schedulers, rb_id, enable_comp);
   }
+  // Baseline3 allocation
+  // SliceContext& slice_ctx = schedulers[0]->slice_ctx_;
+  // std::vector<int> slice_quota(slice_ctx.num_slices_, 0);
+  // if (slice_offset_.size() == 0)
+  //   slice_offset_.resize(slice_quota.size(), 0);
+  // std::cout << "global radiosaber: ";
+  // for (int i = 0; i < slice_quota.size(); i++) {
+  //   slice_quota[i] = nb_of_rbs * schedulers.size() * slice_ctx.weights_[i]
+  //     + slice_offset_[i];
+  //   std::cout << "(" << slice_quota[i] << ", " << slice_offset_[i] << ") ";
+  // }
+  // std::cout << std::endl;
+  for (int rb_id = 0; rb_id < nb_of_rbs; rb_id++) {
+    RadioSaberAllocateOneRBGlobal(
+      schedulers, rb_id, enable_comp,slice_quota);
+  }
+  slice_offset_ = slice_quota;
   for (int j = 0; j < schedulers.size(); j++) {
     schedulers[j]->FinalizeScheduledFlows();
     schedulers[j]->StopSchedule();
@@ -543,6 +564,69 @@ FrameManager::RadioSaberAllocateOneRB(
     if (selected_flow) {
       selected_flow->GetListOfAllocatedRBs()->push_back(rb_id);
       scheduler->slice_target_rbs_[selected_flow->GetSliceID()] -= 1;
+    }
+  }
+  // after allocation of one RB, reduce the slice_target_rbs_ by one;
+}
+
+void
+FrameManager::RadioSaberAllocateOneRBGlobal(
+    std::vector<DownlinkPacketScheduler*>& schedulers,
+    int rb_id, bool enable_comp,
+    std::vector<int>& slice_quota)
+{
+  AMCModule* amc = schedulers[0]->GetMacEntity()->GetAmcModule();
+  for (auto it_s = schedulers.begin(); it_s != schedulers.end(); it_s++) {
+    RadioSaberDownlinkScheduler* scheduler = (RadioSaberDownlinkScheduler*)(*it_s);
+    FlowsToSchedule* flows = scheduler->GetFlowsToSchedule();
+    int num_slice = scheduler->slice_ctx_.num_slices_;
+    std::vector<FlowToSchedule*> slice_flow(num_slice, nullptr);
+    std::vector<double> slice_spectraleff(num_slice, -1);
+    std::vector<int> max_metrics(num_slice, -1);
+    std::unordered_set<int> slice_with_flow;
+    // calcualte the metrics and get the scheduled flow in every slice
+    for (auto it = flows->begin(); it != flows->end(); it++) {
+      FlowToSchedule* flow = *it;
+      double metric = scheduler->ComputeSchedulingMetric(
+          flow->GetBearer(),
+          flow->GetSpectralEfficiency().at(rb_id),
+          rb_id);
+      int slice_id = flow->GetSliceID();
+      // enterprise schedulers
+      if (metric > max_metrics[slice_id]) {
+        max_metrics[slice_id] = metric;
+        slice_flow[slice_id] = flow;
+        slice_spectraleff[slice_id] = flow->GetSpectralEfficiency().at(rb_id);
+        slice_with_flow.insert(slice_id);
+      }
+    }
+    if (slice_with_flow.size() == 0) {
+      continue;
+    }
+    double max_slice_spectraleff = -1;
+    FlowToSchedule* selected_flow = nullptr;
+    for (auto it = slice_with_flow.begin(); it != slice_with_flow.end(); it++) {
+      int slice_id = *it;
+      if (slice_spectraleff[slice_id] > max_slice_spectraleff
+        && slice_quota[slice_id] > 0) {
+        max_slice_spectraleff = slice_spectraleff[slice_id];
+        selected_flow = slice_flow[slice_id];
+      }
+    }
+    if (!selected_flow) {
+      // if no slice has quota(it's possible due to uneven distribution of users in cells)
+      int k = rand() % slice_with_flow.size();
+      for (auto it = slice_with_flow.begin(); it != slice_with_flow.end(); it++) {
+        if (k == 0) {
+          selected_flow = slice_flow[(*it)];
+          break;
+        }
+        k -= 1;
+      }
+    }
+    if (selected_flow) {
+      selected_flow->GetListOfAllocatedRBs()->push_back(rb_id);
+      slice_quota[selected_flow->GetSliceID()] -= 1;
     }
   }
   // after allocation of one RB, reduce the slice_target_rbs_ by one;

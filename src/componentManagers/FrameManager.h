@@ -128,6 +128,13 @@ public:
     std::vector<DownlinkPacketScheduler*>& schedulers,
     int rb_id, bool enable_comp
     );
+
+  std::vector<int> slice_offset_;
+  void RadioSaberAllocateOneRBGlobal(
+    std::vector<DownlinkPacketScheduler*>& schedulers,
+    int rb_id, bool enable_comp,
+    std::vector<int>& quota
+    );  
 };
 
 #endif /* FRAMEMANAGER_H_ */

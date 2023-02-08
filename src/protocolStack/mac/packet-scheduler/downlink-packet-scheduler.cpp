@@ -37,6 +37,7 @@
 #include "../../../utility/eesm-effective-sinr.h"
 #include <jsoncpp/json/json.h>
 #include <fstream>
+#include <cassert>
 
 DownlinkPacketScheduler::DownlinkPacketScheduler(std::string config_fname)
 {
@@ -120,6 +121,7 @@ void DownlinkPacketScheduler::SelectFlowsToSchedule ()
 			  spectralEfficiency.push_back (sEff);
 			}
 
+      assert(cqi_withmute_feedbacks.size() > 0);
 		  //create flow to scheduler record
 		  InsertFlowToSchedule(bearer, dataToTransmit,
         spectralEfficiency, cqi_feedbacks, cqi_withmute_feedbacks);
@@ -388,7 +390,6 @@ DownlinkPacketScheduler::FinalizeScheduledFlows(void)
     << std::endl;
 #endif
   PdcchMapIdealControlMessage *pdcchMsg = new PdcchMapIdealControlMessage ();
-  // FlowsToSchedule* flows = schedulers[j]->GetFlowsToSchedule();
   AMCModule* amc = GetMacEntity()->GetAmcModule();
   for (auto it = flows->begin (); it != flows->end (); it++) {
     FlowToSchedule *flow = (*it);
@@ -409,7 +410,8 @@ DownlinkPacketScheduler::FinalizeScheduledFlows(void)
 #ifdef SCHEDULER_DEBUG
       std::cout << "\t\tflow "
         << flow->GetBearer()->GetApplication()->GetApplicationID()
-        << " slice " << flow->GetBearer()->GetDestination()->GetSliceID()
+        << " cell: " << GetMacEntity()->GetDevice()->GetIDNetworkNode()
+        << " slice: " << flow->GetBearer()->GetDestination()->GetSliceID()
         << " nb_of_rbs: " << flow->GetListOfAllocatedRBs ()->size ()
         << " eff_sinr: " << effective_sinr
         << " tbs_size: " << tbs_size

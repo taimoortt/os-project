@@ -178,18 +178,6 @@ UeLtePhy::StartRx (PacketBurst* p, TransmittedSignal* txSignal)
       power - noise_interference_with_mute,
       neighbor_cell_id
     );
-    // if (power - neighbor_rsrp < 3) {
-    //   sinr_report.emplace_back(
-    //     power - noise_interference,
-    //     power - noise_interference_with_mute,
-    //     neighbor_cell_id
-    //     );
-    // }
-    // else {
-    //   sinr_report.emplace_back(
-    //     power - noise_interference,
-    //     0, -1);
-    // }
   }
   avg_rsrp /= rxSignalValues.size();
   avg_sinr /= rxSignalValues.size();
