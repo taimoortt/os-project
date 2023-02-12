@@ -395,36 +395,43 @@ FrameManager::CentralDownlinkRBsAllocation(void)
   int nb_of_rbs = schedulers[0]->GetMacEntity()->GetDevice()->GetPhy()
       ->GetBandwidthManager()->GetDlSubChannels().size ();
   bool enable_comp = schedulers[0]->enable_comp_;
-  // // NVS allocation
-  // for (int rb_id = 0; rb_id < nb_of_rbs; rb_id++) {
-  //   NVSAllocateOneRB(schedulers, rb_id, enable_comp);
-  // }
-  // Baseline1 allocation
-  for (auto it = schedulers.begin(); it != schedulers.end(); it++) {
-    RadioSaberDownlinkScheduler* scheduler =
-      dynamic_cast<RadioSaberDownlinkScheduler*>(*it);
-    scheduler->CalculateSliceQuota();
+
+  int scheme = 1;
+  // NVS allocation
+  if (scheme == 0) {
+    for (int rb_id = 0; rb_id < nb_of_rbs; rb_id++) {
+      NVSAllocateOneRB(schedulers, rb_id, enable_comp);
+    }
   }
-  for (int rb_id = 0; rb_id < nb_of_rbs; rb_id++) {
-    RadioSaberAllocateOneRB(schedulers, rb_id, enable_comp);
+  else if (scheme == 1) {
+    for (auto it = schedulers.begin(); it != schedulers.end(); it++) {
+      RadioSaberDownlinkScheduler* scheduler = (RadioSaberDownlinkScheduler*)(*it);
+      scheduler->CalculateSliceQuota();
+    }
+    for (int rb_id = 0; rb_id < nb_of_rbs; rb_id++) {
+      RadioSaberAllocateOneRB(schedulers, rb_id, enable_comp);
+    }
   }
-  // Baseline3 allocation
-  // SliceContext& slice_ctx = schedulers[0]->slice_ctx_;
-  // std::vector<int> slice_quota(slice_ctx.num_slices_, 0);
-  // if (slice_offset_.size() == 0)
-  //   slice_offset_.resize(slice_quota.size(), 0);
-  // std::cout << "global radiosaber: ";
-  // for (int i = 0; i < slice_quota.size(); i++) {
-  //   slice_quota[i] = nb_of_rbs * schedulers.size() * slice_ctx.weights_[i]
-  //     + slice_offset_[i];
-  //   std::cout << "(" << slice_quota[i] << ", " << slice_offset_[i] << ") ";
-  // }
-  // std::cout << std::endl;
-  for (int rb_id = 0; rb_id < nb_of_rbs; rb_id++) {
-    RadioSaberAllocateOneRBGlobal(
-      schedulers, rb_id, enable_comp,slice_quota);
+  else if (scheme == 2) {
+    // Baseline3 allocation
+    SliceContext& slice_ctx = schedulers[0]->slice_ctx_;
+    std::vector<int> slice_quota(slice_ctx.num_slices_, 0);
+    if (slice_offset_.size() == 0)
+      slice_offset_.resize(slice_quota.size(), 0);
+    std::cout << "global radiosaber: ";
+    for (int i = 0; i < slice_quota.size(); i++) {
+      slice_quota[i] = nb_of_rbs * schedulers.size() * slice_ctx.weights_[i]
+        + slice_offset_[i];
+      std::cout << "(" << slice_quota[i] << ", " << slice_offset_[i] << ") ";
+    }
+    std::cout << std::endl;
+    for (int rb_id = 0; rb_id < nb_of_rbs; rb_id++) {
+      RadioSaberAllocateOneRBGlobal(
+        schedulers, rb_id, enable_comp,slice_quota);
+    }
+    slice_offset_ = slice_quota;
   }
-  slice_offset_ = slice_quota;
+
   for (int j = 0; j < schedulers.size(); j++) {
     schedulers[j]->FinalizeScheduledFlows();
     schedulers[j]->StopSchedule();

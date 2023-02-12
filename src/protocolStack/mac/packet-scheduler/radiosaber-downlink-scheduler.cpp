@@ -45,8 +45,7 @@ void RadioSaberDownlinkScheduler::CalculateSliceQuota()
       continue;
     }
     slice_with_data.insert(slice_id);
-    slice_target_rbs_[slice_id] = (int)(nb_rbs * slice_ctx_.weights_[slice_id]
-      + slice_rbs_offset_[slice_id]);
+    slice_target_rbs_[slice_id] = (int)(nb_rbs * slice_ctx_.weights_[slice_id]);
     extra_rbs -= slice_target_rbs_[slice_id];
   }
   if (slice_with_data.size() == 0)
@@ -55,7 +54,7 @@ void RadioSaberDownlinkScheduler::CalculateSliceQuota()
   int rand_idx = rand() % slice_with_data.size();
   for (auto it = slice_with_data.begin(); it != slice_with_data.end(); it++) {
     int slice_id = *it;
-    slice_target_rbs_[slice_id] = extra_rbs / slice_with_data.size();
+    slice_target_rbs_[slice_id] += extra_rbs / slice_with_data.size();
     if (rand_idx == 0) {
       slice_target_rbs_[slice_id] += extra_rbs % slice_with_data.size();
     }
