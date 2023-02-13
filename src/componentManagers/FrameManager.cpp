@@ -34,6 +34,7 @@
 #include "../phy/enb-lte-phy.h"
 #include <cassert>
 #include <unordered_set>
+#include <cstdio>
 #include "../protocolStack/mac/packet-scheduler/radiosaber-downlink-scheduler.h"
 
 FrameManager* FrameManager::ptr=NULL;
@@ -391,6 +392,10 @@ FrameManager::CentralDownlinkRBsAllocation(void)
       schedulers[j]->StopSchedule();
     return;
   }
+  if (m_tune_weights) {
+    TuneWeightsAcrossCells(schedulers);
+    m_tune_weights = false;
+  }
   // Assume that every eNB has same number of RBs
   int nb_of_rbs = schedulers[0]->GetMacEntity()->GetDevice()->GetPhy()
       ->GetBandwidthManager()->GetDlSubChannels().size ();
@@ -435,6 +440,108 @@ FrameManager::CentralDownlinkRBsAllocation(void)
   for (int j = 0; j < schedulers.size(); j++) {
     schedulers[j]->FinalizeScheduledFlows();
     schedulers[j]->StopSchedule();
+  }
+}
+
+bool
+FrameManager::TuneWeightsAcrossCells(std::vector<DownlinkPacketScheduler*>& schedulers)
+{
+  std::vector<std::vector<int>> slice_users_per_cell;
+  std::vector<std::vector<double>> ideal_weight_per_cell;
+  auto& slice_weight = schedulers[0]->slice_ctx_.weights_;
+  std::vector<int> slice_users(slice_weight.size(), 0);
+  assert(slice_weight.size() == schedulers[0]->slice_ctx_.num_slices_);
+  // calculate ideal weights of slices in every cell
+  for (int j = 0; j < schedulers.size(); j++) {
+    slice_users_per_cell.emplace_back(slice_weight.size(), 0);
+    ideal_weight_per_cell.emplace_back(slice_weight.size(), 0);
+    auto flows = schedulers[j]->GetFlowsToSchedule();
+    for (auto it = flows->begin(); it != flows->end(); it++) {
+      FlowToSchedule* flow = *it;
+      int slice_id = flow->GetSliceID();
+      slice_users_per_cell[j][slice_id] += 1;
+      slice_users[slice_id] += 1;
+    }
+  }
+  for (int j = 0; j < schedulers.size(); j++) {
+    for (int i = 0; i < slice_weight.size(); i++) {
+      ideal_weight_per_cell[j][i] = (double)slice_users_per_cell[j][i] / slice_users[i]
+        * slice_weight[i] * schedulers.size();
+    }
+  }
+  double delta = 0.01;
+  // 1 indicates over provision; -1 indicates under-provision
+  std::vector<std::vector<int>> provision_matrix;
+  for (int cell_id = 0; cell_id < schedulers.size(); cell_id++) {
+    provision_matrix.emplace_back();
+    for (int slice_id = 0; slice_id < slice_weight.size(); slice_id++) {
+      provision_matrix[cell_id].push_back(0);
+    }
+  }
+  int counter = 0;
+  while (true) {
+    bool swap_once = false;
+    std::cerr << "swap_iteration: " << counter << std::endl;
+    counter += 1;
+    for (int cell_id = 0; cell_id < schedulers.size(); cell_id++) {
+      for (int slice_id = 0; slice_id < slice_weight.size(); slice_id++) {
+        double weight_diff = schedulers[cell_id]->slice_ctx_.weights_[slice_id]
+          - ideal_weight_per_cell[cell_id][slice_id];
+        if (abs(weight_diff) < delta) {
+          continue;
+        }
+        if (weight_diff >= delta) {
+          provision_matrix[cell_id][slice_id] = 1;
+        }
+        else {
+          provision_matrix[cell_id][slice_id] = -1;
+        }
+      }
+    }
+    for (int cell_id = 0; cell_id < schedulers.size(); cell_id++) {
+      std::cerr << "cell " << cell_id << ": ";
+      for (int slice_id = 0; slice_id < slice_weight.size(); slice_id++) {
+        std::cerr << "(" << schedulers[cell_id]->slice_ctx_.weights_[slice_id]
+          << ", " << provision_matrix[cell_id][slice_id]
+          << ", " << ideal_weight_per_cell[cell_id][slice_id]
+          // << ", " << slice_users_per_cell[cell_id][slice_id]
+          << ")" << "; ";
+      }
+      std::cerr << std::endl;
+    }
+    for (int lcell = 0; lcell < schedulers.size(); lcell++) {
+      for (int lslice = 0; lslice < slice_weight.size(); lslice++) {
+        for (int rslice = 0; rslice < slice_weight.size(); rslice++) {
+          if (lslice == rslice) continue;
+          if (provision_matrix[lcell][lslice] * provision_matrix[lcell][rslice] == -1) {
+            for (int rcell = 0; rcell < schedulers.size(); rcell++) {
+              if (lcell == rcell) continue;
+              if (provision_matrix[rcell][lslice] * provision_matrix[rcell][rslice] == -1) {
+                if (provision_matrix[lcell][lslice] * provision_matrix[rcell][lslice] == -1) {
+                  // over-provision
+                  if (provision_matrix[lcell][lslice] == 1) {
+                    schedulers[lcell]->slice_ctx_.weights_[lslice] -= delta;
+                    schedulers[rcell]->slice_ctx_.weights_[lslice] += delta;
+                    schedulers[lcell]->slice_ctx_.weights_[rslice] += delta;
+                    schedulers[rcell]->slice_ctx_.weights_[rslice] -= delta;
+                  }
+                  // under-provision
+                  else {
+                    assert(provision_matrix[lcell][lslice] == -1);
+                    schedulers[lcell]->slice_ctx_.weights_[lslice] += delta;
+                    schedulers[rcell]->slice_ctx_.weights_[lslice] -= delta;
+                    schedulers[lcell]->slice_ctx_.weights_[rslice] -= delta;
+                    schedulers[rcell]->slice_ctx_.weights_[rslice] += delta;
+                  }
+                  swap_once = true;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    if (!swap_once) break;
   }
 }
 

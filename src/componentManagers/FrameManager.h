@@ -60,6 +60,8 @@ private:
 	FrameManager();
 	static FrameManager *ptr;
 
+  bool m_tune_weights = true;
+
 public:
 	//FrameManager();
 	virtual ~FrameManager();
@@ -119,7 +121,9 @@ public:
 	void ResourceAllocation(void);
 
   void CentralResourceAllocation(void);
+
   void CentralDownlinkRBsAllocation(void);
+  bool TuneWeightsAcrossCells(std::vector<DownlinkPacketScheduler*>&);
   void NVSAllocateOneRB(
     std::vector<DownlinkPacketScheduler*>& schedulers,
     int rb_id, bool enable_comp
