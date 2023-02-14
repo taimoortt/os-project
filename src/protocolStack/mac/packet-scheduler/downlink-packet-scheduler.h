@@ -66,6 +66,7 @@ public:
 
   SliceContext  slice_ctx_;
   bool          enable_comp_;
+  bool          enable_tune_weights_;
 
 };
 

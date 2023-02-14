@@ -68,6 +68,7 @@ DownlinkPacketScheduler::DownlinkPacketScheduler(std::string config_fname)
     }
   }
   enable_comp_ = obj["enable_comp"].asBool();
+  enable_tune_weights_ = obj["enable_tune_weights"].asBool();
   slice_ctx_.priority_.resize(slice_ctx_.num_slices_, 0);
   slice_ctx_.ewma_time_.resize(slice_ctx_.num_slices_, 0);
 }

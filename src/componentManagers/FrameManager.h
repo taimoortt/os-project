@@ -60,8 +60,6 @@ private:
 	FrameManager();
 	static FrameManager *ptr;
 
-  bool m_tune_weights = true;
-
 public:
 	//FrameManager();
 	virtual ~FrameManager();
