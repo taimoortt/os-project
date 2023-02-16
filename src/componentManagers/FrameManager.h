@@ -124,19 +124,22 @@ public:
   bool TuneWeightsAcrossCells(std::vector<DownlinkPacketScheduler*>&);
   void NVSAllocateOneRB(
     std::vector<DownlinkPacketScheduler*>& schedulers,
-    int rb_id, bool enable_comp
-    );
+    int rb_id);
+
   void RadioSaberAllocateOneRB(
     std::vector<DownlinkPacketScheduler*>& schedulers,
-    int rb_id, bool enable_comp
-    );
+    int rb_id);
 
+  void FinalizeAllocation(
+    std::vector<int>& cell_byorder,
+    std::vector<DownlinkPacketScheduler*>& schedulers,
+    std::vector<FlowToSchedule*>& cell_flows,
+    int rb_id);
+  
   std::vector<int> slice_offset_;
   void RadioSaberAllocateOneRBGlobal(
     std::vector<DownlinkPacketScheduler*>& schedulers,
-    int rb_id, bool enable_comp,
-    std::vector<int>& quota
-    );  
+    int rb_id, std::vector<int>& quota);  
 };
 
 #endif /* FRAMEMANAGER_H_ */

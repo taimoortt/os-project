@@ -45,7 +45,8 @@ void RadioSaberDownlinkScheduler::CalculateSliceQuota()
       continue;
     }
     slice_with_data.insert(slice_id);
-    slice_target_rbs_[slice_id] = (int)(nb_rbs * slice_ctx_.weights_[slice_id]);
+    slice_target_rbs_[slice_id] = (int)(nb_rbs * slice_ctx_.weights_[slice_id])
+      + slice_rbs_offset_[slice_id];
     extra_rbs -= slice_target_rbs_[slice_id];
   }
   if (slice_with_data.size() == 0)
@@ -59,9 +60,9 @@ void RadioSaberDownlinkScheduler::CalculateSliceQuota()
       slice_target_rbs_[slice_id] += extra_rbs % slice_with_data.size();
     }
     rand_idx -= 1;
-    // caculate the offset for next TTI
-    slice_rbs_offset_[slice_id] = 0; // since we consider rbg in the future
   }
+  // reset the offset
+  std::fill(slice_rbs_offset_.begin(), slice_rbs_offset_.end(), 0);
 }
 
 double
