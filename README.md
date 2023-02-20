@@ -19,7 +19,7 @@ After you've built MultiCell, run the following command to start an experiment:
 ${PATH-TO-MultiCell}/LTE-Sim MultiCell [num-of-cells] [radius] [ues-per-cell] 0 0 1 0 [inter-slice scheduler] 1 [mobility speed] 0.1 128 [config file] [random seed]
 ```
 
-###Parameters:
+### Parameters:
 * num-of-cells: the total number of cells
 * radius: the radius of the coverage area of a cell, the default value is 1
 * ues-per-cell: number of UEs instantiated for every cell, note the final number of UEs attached to a cell may change due to handover
@@ -29,7 +29,7 @@ ${PATH-TO-MultiCell}/LTE-Sim MultiCell [num-of-cells] [radius] [ues-per-cell] 0 
 * random seed: random seed
 
 
-###Config File:
+### Config File:
 The config file is in JSON file format. It configures the scheduling algorithm, the number of UEs, the weight of every slice, and how UEs in every slice instantiate applications and flows.
 
 * Currently let's only test backlogged flows, so please keep ```video_app, video_birate, internet_flow, if_bitrate``` all zero
@@ -38,10 +38,10 @@ The config file is in JSON file format. It configures the scheduling algorithm, 
 * Set ```enable_tune_weights``` to tune the weight of slices in every cell based on the number of UEs(baseline2)
 
 
-###Note:
+### Note:
 I strongly suggest running the scripts ```./scripts/run_exp.sh``` and checking the logs to understand MultiCell better.
 
-##Important Modules
+## Important Modules
 ### The centralized scheduler:
 The implementation is in the file: ```./src/componentManagers/FrameManager.cpp```
 
@@ -53,6 +53,9 @@ The implementation is in the file: ```./src/componentManagers/FrameManager.cpp``
 ### The interference and cqi-with-mute reports:
 * Check ```UeLtePhy::StartRx()``` to understand how SINR and SINR-with-mute are calculated
 * ```./src/phy/interference.cpp``` shows the logic where the RSRP(Interference) from every cell is calculated
+
+### Mobility
+* Check ```line 244-270``` in ```./src/scenarios/multi-cell.h``` to understand how a UE is created. In detail, the function ```GetUniformUsersDistribution()``` in ```./src/utility/UsersDistribution.h``` shows how the simulator randomly generates the coordinates of users. 
 
 ### The logging system:
 * Set ```SCHEDULER_DEBUG``` to debug the scheduling parts
