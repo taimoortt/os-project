@@ -539,6 +539,9 @@ FrameManager::TuneWeightsAcrossCells(std::vector<DownlinkPacketScheduler*>& sche
               if (provision_matrix[lcell][lslice] * provision_matrix[rcell][lslice] == 1
                 && provision_matrix[lcell][rslice] * provision_matrix[rcell][rslice] == 1)
                 continue;
+              // if any 0 is achieved is rcell, skip
+              if (provision_matrix[rcell][lslice] * provision_matrix[rcell][rslice] == 0)
+                continue;
               if (provision_matrix[lcell][lslice] == 1) {
                 schedulers[lcell]->slice_ctx_.weights_[lslice] -= delta;
                 schedulers[rcell]->slice_ctx_.weights_[lslice] += delta;
