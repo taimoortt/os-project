@@ -52,9 +52,10 @@ DownlinkPacketScheduler::DownlinkPacketScheduler(std::string config_fname)
   reader.parse(ifs, obj);
   ifs.close();
   const Json::Value& slice_schemes = obj["slices"];
+  slice_ctx_.num_slices_ = 0;
   for (int i = 0; i < slice_schemes.size(); i++) {
     int n_slices = slice_schemes[i]["n_slices"].asInt();
-    slice_ctx_.num_slices_ = n_slices;
+    slice_ctx_.num_slices_ += n_slices;
     for (int j = 0; j < n_slices; j++) {
       slice_ctx_.weights_.push_back(
         slice_schemes[i]["weight"].asDouble()
@@ -71,6 +72,7 @@ DownlinkPacketScheduler::DownlinkPacketScheduler(std::string config_fname)
   enable_tune_weights_ = obj["enable_tune_weights"].asBool();
   slice_ctx_.priority_.resize(slice_ctx_.num_slices_, 0);
   slice_ctx_.ewma_time_.resize(slice_ctx_.num_slices_, 0);
+  assert(slice_ctx_.num_slices_ == slice_ctx_.weights_.size());
 }
 
 DownlinkPacketScheduler::~DownlinkPacketScheduler()
