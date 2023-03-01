@@ -29,6 +29,7 @@
 
 #include <vector>
 #include <iostream>
+#include <time.h>
 
 static CartesianCoordinates*
 GetCartesianCoordinatesFromPolar (double r, double angle)
@@ -48,13 +49,27 @@ GetUniformUsersDistribution (int idCell, int nbUE)
   vector<CartesianCoordinates*> *vectorOfCoordinates = new vector<CartesianCoordinates*>;
 
   Cell *cell = networkManager->GetCellByID(idCell);
+  double midpoint_x = 0, midpoint_y = 0, cell_x_neighbor = 0, cell_y_neighbor = 0;
+  double cell_x = cell->GetCellCenterPosition()->GetCoordinateX();
+  double cell_y = cell->GetCellCenterPosition()->GetCoordinateY();
+  if (idCell < 6){
+    Cell *cell_neighbor = networkManager->GetCellByID(idCell+1);
+    cell_x_neighbor = cell_neighbor->GetCellCenterPosition()->GetCoordinateX();
+    cell_y_neighbor = cell_neighbor->GetCellCenterPosition()->GetCoordinateY();
+    midpoint_x = ((cell_x + cell_x_neighbor)/2);
+    midpoint_y = ((cell_y + cell_y_neighbor)/2);
+  }
+
+
+  // Made the following changes to implement more users on a
+
 
   double radius = (cell->GetRadius()*1000)*0.8;
 
   CartesianCoordinates *cellCoordinates = cell->GetCellCenterPosition();
   double r; double angle;
 
-  for (int i = 0; i < nbUE; i++)
+  for (int i = 0; i < nbUE/2; i++)
     {
     // r = (double) (rand() % (int)(cell->GetRadius()*1000) * 2.732);
     r = (double) (rand() % (int)(cell->GetRadius()*1000) * 3);
@@ -65,10 +80,20 @@ GetUniformUsersDistribution (int idCell, int nbUE)
 	  //Compute absoluteCoordinates
 	  // newCoordinates->SetCoordinateX (cellCoordinates->GetCoordinateX () + newCoordinates->GetCoordinateX ());
 	  // newCoordinates->SetCoordinateY (cellCoordinates->GetCoordinateY () + newCoordinates->GetCoordinateY ());
-    newCoordinates->SetCoordinateX (newCoordinates->GetCoordinateX ());
-	  newCoordinates->SetCoordinateY (newCoordinates->GetCoordinateY ());
+    // The following 2 lines are redundant since the function Cartesian to Polar already returns a CC object which already has the x,y values set.
+    // newCoordinates->SetCoordinateX (newCoordinates->GetCoordinateX ());
+	  // newCoordinates->SetCoordinateY (newCoordinates->GetCoordinateY ());
 
 	  vectorOfCoordinates->push_back(newCoordinates);
+    }
+
+  for (int i = 0; i < nbUE/2; i++)
+    {
+      double random_num = (double)(rand() % 60);
+      // cout << "Random Number : " << random_num << endl;
+      // cout << "MP_x : " << midpoint_x << "\tMP_y : " << midpoint_y << endl;
+      CartesianCoordinates *newCoordinates = new CartesianCoordinates(midpoint_x + random_num, midpoint_y + random_num);
+	    vectorOfCoordinates->push_back(newCoordinates);
     }
 
   return vectorOfCoordinates;

@@ -713,22 +713,22 @@ FrameManager::FinalizeAllocation(
     int tbs = amc->GetTBSizeFromMCS(amc->GetMCSFromCQI(cqi_report.cqi));
     int neighbor_cell = cqi_report.neighbor_cell;
     FlowToSchedule* neighbor_flow = cell_flows[neighbor_cell];
-    CqiReport another_report = neighbor_flow->GetCqiWithMuteFeedbacks().at(rb_id);
-    int tbs_another = amc->GetTBSizeFromMCS(amc->GetMCSFromCQI(another_report.cqi));
+    CqiReport neighbor_report = neighbor_flow->GetCqiWithMuteFeedbacks().at(rb_id);
+    int tbs_neighbor = amc->GetTBSizeFromMCS(amc->GetMCSFromCQI(neighbor_report.cqi));
 
     // if the neighbor cell is not allocated
     if (cells_allocated.find(neighbor_cell) == cells_allocated.end()) {
       if (cells_muted.find(neighbor_cell) != cells_muted.end()) {
         cqi_report.final_cqi = cqi_report.cqi_with_mute;
       }
-      else if (tbs_with_mute > 2.0 * (tbs_another + tbs)) {
+      else if (tbs_with_mute > 2.0 * (tbs_neighbor + tbs)) {
 #ifdef SCHEDULER_DEBUG
         std::cout << "Mute cell " << neighbor_cell
           << " rb " << rb_id << " for flow "
           << flow->GetBearer()->GetApplication()->GetApplicationID()
           << " tbs_with_mute: " << tbs_with_mute
           << " original_tbs: " << tbs
-          << " another_tbs: " << tbs_another << std::endl;
+          << " neighbor_tbs: " << tbs_neighbor << std::endl;
 #endif
         cells_muted.insert(neighbor_cell);
         cqi_report.final_cqi = cqi_report.cqi_with_mute;

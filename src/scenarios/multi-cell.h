@@ -65,7 +65,7 @@ static void MultiCell (int nbCell, double radius,
   double duration = 10;
   double flow_duration = 10;
 
-  int cluster = 3;
+  int cluster = 1;
   double bandwidth = 20;
 
   // CREATE COMPONENT MANAGER
@@ -148,7 +148,7 @@ static void MultiCell (int nbCell, double radius,
   for (int i = 0; i < nbCell; i++)
   {
     CartesianCoordinates center =
-      GetCartesianCoordinatesForCell(i, radius * 1000.);
+      GetCartesianCoordinatesForCell(i, radius *1000.);
 
     Cell *c = new Cell (i, radius, 0.035, center.GetCoordinateX (), center.GetCoordinateY ());
     cells->push_back (c);
@@ -238,6 +238,9 @@ static void MultiCell (int nbCell, double radius,
     slice_users.push_back(num_ue);
     total_ues += num_ue;
   }
+  // std::cout << "Total UEs: " << total_ues << endl;
+  // std::cout << "nbCell: " << nbCell << endl;
+  // std::cout << "nbUE: " << nbUE << endl;
   assert(total_ues == nbCell * nbUE);
 
   //nbUE is the number of users that are into each cell at the beginning of the simulation

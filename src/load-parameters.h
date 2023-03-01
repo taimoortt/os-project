@@ -28,7 +28,7 @@
 
 
 /* path */
-static std::string path ("/home/alvin/Research/SmallCell/MultiCell/");
+static std::string path ("/home/networklab/mtt/");
 
 
 /* tracing */
