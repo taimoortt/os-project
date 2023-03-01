@@ -35,7 +35,9 @@
 #include <cassert>
 #include <unordered_set>
 #include <cstdio>
+#include <cmath>
 #include <algorithm>
+#include <random>
 #include "../protocolStack/mac/packet-scheduler/radiosaber-downlink-scheduler.h"
 
 FrameManager* FrameManager::ptr=NULL;
@@ -459,6 +461,10 @@ inline int provision_metric(double weight, double ideal_weight) {
   }
 }
 
+inline bool within_range(double v) {
+  return v >= 0 && v <= 1;
+}
+
 bool
 FrameManager::TuneWeightsAcrossCells(std::vector<DownlinkPacketScheduler*>& schedulers)
 {
@@ -485,49 +491,125 @@ FrameManager::TuneWeightsAcrossCells(std::vector<DownlinkPacketScheduler*>& sche
         * slice_weight[i] * schedulers.size();
     }
   }
-  double delta = 0.01;
+  const double delta = 0.01;
   // 1 indicates over provision; -1 indicates under-provision
   std::vector<std::vector<int>> provision_matrix;
   for (int cell_id = 0; cell_id < schedulers.size(); cell_id++) {
     provision_matrix.emplace_back();
     for (int slice_id = 0; slice_id < slice_weight.size(); slice_id++) {
-      provision_matrix[cell_id].push_back(0);
+      double metric = provision_metric(
+          schedulers[cell_id]->slice_ctx_.weights_[slice_id],
+          ideal_weight_per_cell[cell_id][slice_id]);
+      provision_matrix[cell_id].push_back(metric);
     }
   }
+  
+  /*
+  // simulated annealing
+  int counter = 0;
+  double temp = 1;
+  const double cooling_alpha = 0.99;
+  std::random_device rd;
+  std::mt19937 e2(rd());
+  std::uniform_real_distribution<> distribution(0, 1);
+  while (counter < 2000) {
+    int lcell = rand() % schedulers.size();
+    int rcell = rand() % schedulers.size();
+    while (rcell == lcell) rcell = rand() % schedulers.size();
+    int lslice = rand() % slice_weight.size();
+    int rslice = rand() % slice_weight.size();
+    while (rslice == lslice) rslice = rand() % slice_weight.size();
+    if (provision_matrix[lcell][lslice] == 0)
+      continue;
+    int over = provision_matrix[lcell][lslice];
+    double sum_diff = 0;
+    for (int cell_id = 0; cell_id < schedulers.size(); cell_id++) {
+      for (int slice_id = 0; slice_id < slice_weight.size(); slice_id++) {
+        sum_diff += pow(ideal_weight_per_cell[cell_id][slice_id] - 
+          schedulers[cell_id]->slice_ctx_.weights_[slice_id], 2);
+      }
+    }
+    double lc_ls = schedulers[lcell]->slice_ctx_.weights_[lslice];
+    double lc_rs = schedulers[lcell]->slice_ctx_.weights_[rslice];
+    double rc_ls = schedulers[rcell]->slice_ctx_.weights_[lslice];
+    double rc_rs = schedulers[rcell]->slice_ctx_.weights_[rslice];
+    double origin_loss = 
+        pow(lc_ls - ideal_weight_per_cell[lcell][lslice], 2)
+      + pow(lc_rs - ideal_weight_per_cell[lcell][rslice], 2)
+      + pow(rc_ls - ideal_weight_per_cell[rcell][lslice], 2)
+      + pow(rc_rs - ideal_weight_per_cell[rcell][rslice], 2);
+    double new_loss = 
+        pow(lc_ls - ideal_weight_per_cell[lcell][lslice] - over * delta, 2)
+      + pow(lc_rs - ideal_weight_per_cell[lcell][rslice] + over * delta, 2)
+      + pow(rc_ls - ideal_weight_per_cell[rcell][lslice] + over * delta, 2)
+      + pow(rc_rs - ideal_weight_per_cell[rcell][rslice] - over * delta, 2);
+    bool inrange = within_range(lc_ls - over*delta) 
+      && within_range(lc_rs + over * delta) && within_range(rc_ls + over * delta)
+      && within_range(rc_rs - over * delta);
+    double delta_loss = new_loss - origin_loss;
+    std::cout << counter << " temp: " << temp << " delta: " << delta_loss
+      << " total_loss: " << sum_diff << std::endl;
+    if ( inrange && (delta_loss < 0 || distribution(e2) < exp(-delta_loss / temp)) ) {
+      std::vector<int> cells;
+      cells.push_back(lcell);
+      cells.push_back(rcell);
+      std::vector<int> slices;
+      slices.push_back(lslice);
+      slices.push_back(rslice);
+      for (auto it = cells.begin(); it != cells.end(); it++) {
+        for (auto it_s = slices.begin(); it_s != slices.end(); it_s++) {
+          int cell_id = *it;
+          int slice_id = *it_s;
+          std::cout << "(" << schedulers[cell_id]->slice_ctx_.weights_[slice_id]
+            << ", " << ideal_weight_per_cell[cell_id][slice_id]
+            << ")" << "; ";  
+        }
+      }
+      std::cout << std::endl;
+      schedulers[lcell]->slice_ctx_.weights_[lslice] -= over * delta;
+      schedulers[lcell]->slice_ctx_.weights_[rslice] += over * delta;
+      schedulers[rcell]->slice_ctx_.weights_[lslice] += over * delta;
+      schedulers[rcell]->slice_ctx_.weights_[rslice] -= over * delta;
+      provision_matrix[lcell][lslice] = provision_metric(
+        schedulers[lcell]->slice_ctx_.weights_[lslice], ideal_weight_per_cell[lcell][lslice]);
+      provision_matrix[lcell][rslice] = provision_metric(
+        schedulers[lcell]->slice_ctx_.weights_[rslice], ideal_weight_per_cell[lcell][rslice]);
+      provision_matrix[rcell][lslice] = provision_metric(
+        schedulers[rcell]->slice_ctx_.weights_[lslice], ideal_weight_per_cell[rcell][lslice]);
+      provision_matrix[rcell][rslice] = provision_metric(
+        schedulers[rcell]->slice_ctx_.weights_[rslice], ideal_weight_per_cell[rcell][rslice]);
+
+      for (auto it = cells.begin(); it != cells.end(); it++) {
+        for (auto it_s = slices.begin(); it_s != slices.end(); it_s++) {
+          int cell_id = *it;
+          int slice_id = *it_s;
+          std::cout << "(" << schedulers[cell_id]->slice_ctx_.weights_[slice_id]
+            << ", " << ideal_weight_per_cell[cell_id][slice_id]
+            << ")" << "; ";  
+        }
+      }
+      std::cout << std::endl;
+    }
+    temp *= cooling_alpha;
+    counter += 1;
+  }
+  for (int cell_id = 0; cell_id < schedulers.size(); cell_id++) {
+    std::cout << "cell " << cell_id << ": ";
+    for (int slice_id = 0; slice_id < slice_weight.size(); slice_id++) {
+      std::cout << "(" << schedulers[cell_id]->slice_ctx_.weights_[slice_id]
+        << ", " << provision_matrix[cell_id][slice_id]
+        << ", " << ideal_weight_per_cell[cell_id][slice_id]
+        << ")" << "; ";
+    }
+    std::cout << std::endl;
+  }
+  */
+  // initial greedy algorithm: we keep reallocating when there's a chance
   int counter = 0;
   while (true) {
     bool swap_once = false;
     std::cout << "swap_iteration: " << counter << std::endl;
     counter += 1;
-    for (int cell_id = 0; cell_id < schedulers.size(); cell_id++) {
-      for (int slice_id = 0; slice_id < slice_weight.size(); slice_id++) {
-        provision_matrix[cell_id][slice_id] = provision_metric(
-          schedulers[cell_id]->slice_ctx_.weights_[slice_id], ideal_weight_per_cell[cell_id][slice_id]
-        );
-        // double weight_diff = schedulers[cell_id]->slice_ctx_.weights_[slice_id]
-        //   - ideal_weight_per_cell[cell_id][slice_id];
-        // if (abs(weight_diff) < delta) {
-        //   provision_matrix[cell_id][slice_id] = 0;
-        // }
-        // if (weight_diff >= delta) {
-        //   provision_matrix[cell_id][slice_id] = 1;
-        // }
-        // else {
-        //   provision_matrix[cell_id][slice_id] = -1;
-        // }
-      }
-    }
-    for (int cell_id = 0; cell_id < schedulers.size(); cell_id++) {
-      std::cout << "cell " << cell_id << ": ";
-      for (int slice_id = 0; slice_id < slice_weight.size(); slice_id++) {
-        std::cout << "(" << schedulers[cell_id]->slice_ctx_.weights_[slice_id]
-          << ", " << provision_matrix[cell_id][slice_id]
-          << ", " << ideal_weight_per_cell[cell_id][slice_id]
-          // << ", " << slice_users_per_cell[cell_id][slice_id]
-          << ")" << "; ";
-      }
-      std::cout << std::endl;
-    }
     for (int lcell = 0; lcell < schedulers.size(); lcell++) {
       for (int lslice = 0; lslice < slice_weight.size(); lslice++) {
         for (int rslice = 0; rslice < slice_weight.size(); rslice++) {
@@ -539,32 +621,27 @@ FrameManager::TuneWeightsAcrossCells(std::vector<DownlinkPacketScheduler*>& sche
               if (provision_matrix[lcell][lslice] * provision_matrix[rcell][lslice] == 1
                 && provision_matrix[lcell][rslice] * provision_matrix[rcell][rslice] == 1)
                 continue;
-              if (provision_matrix[lcell][lslice] == 1) {
-                schedulers[lcell]->slice_ctx_.weights_[lslice] -= delta;
-                schedulers[rcell]->slice_ctx_.weights_[lslice] += delta;
-                schedulers[lcell]->slice_ctx_.weights_[rslice] += delta;
-                schedulers[rcell]->slice_ctx_.weights_[rslice] -= delta;
-              }
-              else {
-                assert(provision_matrix[lcell][lslice] == -1);
-                schedulers[lcell]->slice_ctx_.weights_[lslice] += delta;
-                schedulers[rcell]->slice_ctx_.weights_[lslice] -= delta;
-                schedulers[lcell]->slice_ctx_.weights_[rslice] -= delta;
-                schedulers[rcell]->slice_ctx_.weights_[rslice] += delta;
-              }
+              // if any 0 is achieved in rcell, skip
+              if (provision_matrix[rcell][lslice] * provision_matrix[rcell][rslice] == 0)
+                continue;
+              int over = provision_matrix[lcell][lslice];
+              schedulers[lcell]->slice_ctx_.weights_[lslice] -= over * delta;
+              schedulers[rcell]->slice_ctx_.weights_[lslice] += over * delta;
+              schedulers[lcell]->slice_ctx_.weights_[rslice] += over * delta;
+              schedulers[rcell]->slice_ctx_.weights_[rslice] -= over * delta;
               swap_once = true;
               provision_matrix[lcell][lslice] = provision_metric(
-                schedulers[lcell]->slice_ctx_.weights_[lslice], ideal_weight_per_cell[lcell][lslice]
-              );
+                schedulers[lcell]->slice_ctx_.weights_[lslice],
+                ideal_weight_per_cell[lcell][lslice]);
               provision_matrix[lcell][rslice] = provision_metric(
-                schedulers[lcell]->slice_ctx_.weights_[rslice], ideal_weight_per_cell[lcell][rslice]
-              );
+                schedulers[lcell]->slice_ctx_.weights_[rslice],
+                ideal_weight_per_cell[lcell][rslice]);
               provision_matrix[rcell][lslice] = provision_metric(
-                schedulers[rcell]->slice_ctx_.weights_[lslice], ideal_weight_per_cell[rcell][lslice]
-              );
+                schedulers[rcell]->slice_ctx_.weights_[lslice],
+                ideal_weight_per_cell[rcell][lslice]);
               provision_matrix[rcell][rslice] = provision_metric(
-                schedulers[rcell]->slice_ctx_.weights_[rslice], ideal_weight_per_cell[rcell][rslice]
-              );
+                schedulers[rcell]->slice_ctx_.weights_[rslice],
+                ideal_weight_per_cell[rcell][rslice]);
             }
           }
         }
@@ -572,6 +649,20 @@ FrameManager::TuneWeightsAcrossCells(std::vector<DownlinkPacketScheduler*>& sche
     }
     if (!swap_once) break;
   }
+  double sum_diff = 0;
+  for (int cell_id = 0; cell_id < schedulers.size(); cell_id++) {
+    std::cout << "cell " << cell_id << ": ";
+    for (int slice_id = 0; slice_id < slice_weight.size(); slice_id++) {
+      std::cout << "(" << schedulers[cell_id]->slice_ctx_.weights_[slice_id]
+        << ", " << provision_matrix[cell_id][slice_id]
+        << ", " << ideal_weight_per_cell[cell_id][slice_id]
+        << ")" << "; ";
+      sum_diff += pow(ideal_weight_per_cell[cell_id][slice_id] - 
+        schedulers[cell_id]->slice_ctx_.weights_[slice_id], 2);
+    }
+    std::cout << std::endl;
+  }
+  std::cout << "total_loss: " << sum_diff << std::endl;
 }
 
 void
