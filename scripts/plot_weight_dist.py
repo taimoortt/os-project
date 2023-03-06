@@ -147,8 +147,37 @@ def get_weights(fname):
         wdiff_percell.append( wdiff )
     return wdiff_percell
 
-def plot_heatmap(tag):
-    wdiff_percell = np.array(get_weights(tag+".log"))
+def get_baseline_weights(fname):
+    n_slices = 5
+    lines = []
+    last_index = -1
+    with open(fname, "r") as fin:
+        lines = fin.readlines()
+    for i, line in enumerate(lines):
+        words = line.split(" ")
+        if words[0] == "total_loss:":
+            last_index = i
+            break
+    wdiff_percell = []
+    for i in range(n_cells):
+        final_w = [1/n_slices for j in range(n_slices)]
+        ideal_w = []
+        words = lines[last_index - n_cells + i].split(" ")
+        for i in range(4, len(words)-1, 3):
+            ideal_w.append( float( words[i][:-2] ) )
+        assert(len(final_w) == len(ideal_w))
+        wdiff = []
+        for i in range(len(final_w)):
+            wdiff.append( final_w[i] - ideal_w[i] )
+        wdiff_percell.append( wdiff )
+    return wdiff_percell
+
+def plot_heatmap(tag, baseline=False):
+    if baseline:
+        wdiff_percell = np.array(get_baseline_weights(tag+".log"))
+    else:
+        wdiff_percell = np.array(get_weights(tag+".log"))
+
     cells = []
     for i in range(n_cells):
         cells.append("c" + str(i))
@@ -157,11 +186,18 @@ def plot_heatmap(tag):
     for i in range(n_slices):
         slices.append("s" + str(i))
 
+    #fig, ax = plt.subplots(figsize=(7,8))
     fig, ax = plt.subplots()
-    im, cbar = heatmap(wdiff_percell, cells, slices, ax=ax)
+    im, cbar = heatmap(wdiff_percell, cells, slices, ax=ax, vmin=-0.5, vmax=0.2)
     texts = annotate_heatmap(im)
+    sum_diff = np.sum(np.square(wdiff_percell))
+    ax.set_title("total_diff: %.3f" % (sum_diff))
     fig.tight_layout()
-    fig.savefig(tag+"_heatmap.png")
+    if baseline:
+        fig.savefig("baseline_heatmap.png")
+    else:
+        fig.savefig(tag+"_heatmap.png")
 
-#plot_heatmap("naive2_0")
-#plot_heatmap("annealing2_0")
+plot_heatmap("naive2_1", True)
+plot_heatmap("naive2_1", False)
+plot_heatmap("annealing2_1", False)
