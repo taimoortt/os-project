@@ -38,6 +38,7 @@
 #include <cmath>
 #include <algorithm>
 #include <random>
+#include <stdexcept>
 #include "../protocolStack/mac/packet-scheduler/radiosaber-downlink-scheduler.h"
 
 FrameManager* FrameManager::ptr=NULL;
@@ -793,6 +794,9 @@ FrameManager::FinalizeAllocation(
       continue; // the cell is muted, skip
     }
     FlowToSchedule* flow = cell_flows[cell_id];
+    if (flow == nullptr) {
+      throw std::runtime_error("cell with no flow");
+    }
     CqiReport& cqi_report = flow->GetCqiWithMuteFeedbacks().at(rb_id);
     cqi_report.final_cqi = cqi_report.cqi;
     flow->GetListOfAllocatedRBs()->push_back(rb_id);
@@ -816,7 +820,7 @@ FrameManager::FinalizeAllocation(
       if (cells_muted.find(neighbor_cell) != cells_muted.end()) {
         cqi_report.final_cqi = cqi_report.cqi_with_mute;
       }
-      else if (tbs_with_mute > 2.0 * (tbs_another + tbs)) {
+      else if (tbs_with_mute > 1.5 * (tbs_another + tbs)) {
 #ifdef SCHEDULER_DEBUG
         std::cout << "Mute cell " << neighbor_cell
           << " rb " << rb_id << " for flow "

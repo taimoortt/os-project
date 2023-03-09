@@ -72,12 +72,18 @@ PowerBasedHoManager::CheckHandoverNeed (UserEquipment* ue)
 
 	      RXpower = TXpower - pathLoss;
 
-	      if (RXpower > targetRXpower)
+	      if (RXpower > (targetRXpower + 3))
 	        {
 	    	  if (NetworkManager::Init()->CheckHandoverPermissions(probableNewTargetNode,ue))
 	    	  {
-		    	  targetRXpower = RXpower;
-			      targetNode = probableNewTargetNode;
+				#ifdef HANDOVER_DEBUG
+				std::cout << "node: " << targetNode->GetIDNetworkNode()
+				  << " curr_rx_power: " << targetRXpower
+				  << " target_node: " << probableNewTargetNode->GetIDNetworkNode()
+				  << " target_rx_power: " << RXpower << std::endl;
+				#endif
+		    	targetRXpower = RXpower;
+				targetNode = probableNewTargetNode;
 	    	  }
 	        }
 	    }
