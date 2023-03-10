@@ -62,7 +62,7 @@ GetUniformUsersDistribution (int idCell, int nbUE)
   CartesianCoordinates *cellCoordinates = cell->GetCellCenterPosition();
   double r; double angle;
 
-  for (int i = 0; i < nbUE/2; i++)
+  for (int i = 0; i < nbUE; i++)
   {
     // r = (double) (rand() % (int)(cell->GetRadius()*1000) * 2.732);
     r = (double) (rand() % (int)(cell->GetRadius()*1000) * 4);
@@ -79,13 +79,13 @@ GetUniformUsersDistribution (int idCell, int nbUE)
 	  vectorOfCoordinates->push_back(newCoordinates);
   }
 
-  for (int i = 0; i < (nbUE - nbUE/2); i++)
-  {
-    double random_num = (double)(rand() % 60);
-    CartesianCoordinates *newCoordinates = new CartesianCoordinates(
-      midpoint_x + random_num, midpoint_y + random_num);
-	  vectorOfCoordinates->push_back(newCoordinates);
-  }
+  // for (int i = 0; i < nbUE; i++)
+  // {
+  //   double random_num = (double)(rand() % 60);
+  //   CartesianCoordinates *newCoordinates = new CartesianCoordinates(
+  //     midpoint_x + random_num, midpoint_y + random_num);
+	//   vectorOfCoordinates->push_back(newCoordinates);
+  // }
 
   return vectorOfCoordinates;
 }

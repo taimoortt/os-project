@@ -774,6 +774,8 @@ FrameManager::RadioSaberAllocateOneRB(
   for (auto it = cell_spectraleff.begin(); it != cell_spectraleff.end(); it++) {
     cell_byorder.push_back(it->first);
   }
+  // auto rng = std::default_random_engine();
+  // std::shuffle(cell_byorder.begin(), cell_byorder.end(), rng);
   FinalizeAllocation(cell_byorder, schedulers, cell_flows, rb_id);
 }
 
