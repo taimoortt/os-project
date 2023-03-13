@@ -13,6 +13,6 @@
   [
     35, 35
   ],
-  "enable_comp": true,
-  "enable_tune_weights": false 
+  "enable_comp": false,
+  "enable_tune_weights": true 
 }

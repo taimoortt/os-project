@@ -593,6 +593,7 @@ FrameManager::TuneWeightsAcrossCells(std::vector<DownlinkPacketScheduler*>& sche
     temp *= cooling_alpha;
     counter += 1;
   }
+  double sum_diff = 0;
   for (int cell_id = 0; cell_id < schedulers.size(); cell_id++) {
     std::cout << "cell " << cell_id << ": ";
     for (int slice_id = 0; slice_id < slice_weight.size(); slice_id++) {
@@ -600,9 +601,12 @@ FrameManager::TuneWeightsAcrossCells(std::vector<DownlinkPacketScheduler*>& sche
         << ", " << provision_matrix[cell_id][slice_id]
         << ", " << ideal_weight_per_cell[cell_id][slice_id]
         << ")" << "; ";
+      sum_diff += pow(ideal_weight_per_cell[cell_id][slice_id] - 
+        schedulers[cell_id]->slice_ctx_.weights_[slice_id], 2);
     }
     std::cout << std::endl;
   }
+  std::cout << "total_loss: " << sum_diff << std::endl;
   */
   // initial greedy algorithm: we keep reallocating when there's a chance
   int counter = 0;

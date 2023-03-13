@@ -294,7 +294,9 @@ AMCModule::GetMCSIndexFromEfficiency(double efficiency)
 int
 AMCModule::GetTBSizeFromMCS (int mcs)
 {
-  return TransportBlockSize[mcs];
+  int itbs = McsToItbs[mcs];
+  return TransportBlockSizeTable[0][itbs];
+  //return TransportBlockSize[mcs];
 }
 
 int

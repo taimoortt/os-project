@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-TIMES=3
+TIMES=1
 import matplotlib.pyplot as plt
 import matplotlib
 from collections import defaultdict
@@ -7,7 +7,7 @@ import numpy as np
 
 INTRA = "pf"
 FTYPE=".pdf"
-COLORS=["dimgrey", "", "cornflowerblue", ""]
+COLORS=["dimgrey", "green", "cornflowerblue", "orange"]
 
 # get the per-second cumulative bytes
 def get_cumubytes(fname):
@@ -29,12 +29,10 @@ def get_cumubytes(fname):
 
 def get_throughput(dname):
     ratio = 8 / (1000 * 1000)
-    #for i in range(TIMES):
-    #    get_cumubytes( dname + "/baseline1_" + str(i) + ".log")
-    #for i in range(TIMES):
-    #    get_cumubytes( dname + "/baseline2_" + str(i) + ".log")
     for i in range(TIMES):
-        get_cumubytes( dname + "/baseline6_" + str(i) + ".log")
+        get_cumubytes( dname + "1_" + str(i) + ".log")
+    for i in range(TIMES):
+        get_cumubytes( dname + "5_" + str(i) + ".log")
 
 def plot_percell(fname):
     end_ts = 10000 - 100
@@ -69,27 +67,28 @@ def plot_percell(fname):
     fig, ax = plt.subplots(figsize=(8, 4))
     bar_width = 0.2
     ax.grid(axis="y", alpha=0.5)
-    ax.bar( x_array - 0.5 * bar_width, rbs_per_cell[0], width=bar_width, label="Slice0", color=COLORS[0] )
-    ax.bar( x_array + 0.5 * bar_width, rbs_per_cell[1], width=bar_width, label="Slice1", color=COLORS[2] )
+    ax.bar( x_array - 1.5 * bar_width, rbs_per_cell[0], width=bar_width, label="Slice0", color=COLORS[0] )
+    ax.bar( x_array - 0.5 * bar_width, rbs_per_cell[1], width=bar_width, label="Slice0", color=COLORS[1] )
+    ax.bar( x_array + 0.5 * bar_width, rbs_per_cell[2], width=bar_width, label="Slice0", color=COLORS[2] )
+    ax.bar( x_array + 1.5 * bar_width, rbs_per_cell[3], width=bar_width, label="Slice1", color=COLORS[3] )
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
     ax.set_xlabel("Cell ID", fontsize=default_fontsize + 4)
     ax.set_ylabel("RBs-per-TTI", fontsize=default_fontsize + 4)
     ax.set_title(fname)
-    ax.legend()
+    # ax.legend()
     ax.tick_params(axis="both", labelsize=default_fontsize)
     plt.tight_layout()
     fig.savefig(fname + ".png")
 
-    for slices in ues_per_cell:
-        for ues in slices:
-            print(len(ues))
+    # for slices in ues_per_cell:
+    #     for ues in slices:
+    #         print(len(ues))
 
 
 matplotlib.rcParams['pdf.fonttype'] = 42
 matplotlib.rcParams['ps.fonttype'] = 42
 
-# get_throughput("./")
-# plot_percell("./baseline1_1")
-plot_percell("./baseline6_1")
-# plot_percell("./baseline5_1")
+# get_throughput("./logs/celledge_b")
+plot_percell("./logs/celledge_b1_0")
+plot_percell("./logs/celledge_b5_0")
