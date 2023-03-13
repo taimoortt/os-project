@@ -38,10 +38,10 @@ class PdcchMapIdealControlMessage;
 class SchedulingRequestIdealControlMessage;
 
 struct CqiReport {
-  int cqi;
-  int cqi_with_mute;
-  int neighbor_cell;  // if neighbor_cell is -1, we don't mute
-  int final_cqi;
+  int cqi;              // the "dirty" cqi without muting any cell
+  int cqi_with_mute;    // the cqi with just the neighbor cell muted
+  int neighbor_cell;    // the cell_id of the neighbor cell with highest cqi
+  int final_cqi;        // finalized after the enb mutes and allocate rbs, initialized as cqi
 
   CqiReport(int _cqi, int _cqi_with_mute, int _neighbor_cell)
   : cqi(_cqi), cqi_with_mute(_cqi_with_mute),
