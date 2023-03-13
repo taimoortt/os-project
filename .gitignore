@@ -43,3 +43,6 @@ TOOLS/make_sum
 *.error
 *.png
 *.backup
+
+*.txt
+src/*.txt
