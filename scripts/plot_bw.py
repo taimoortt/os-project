@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-TIMES=1
+TIMES=3
 import matplotlib.pyplot as plt
 import matplotlib
 from collections import defaultdict
@@ -22,17 +22,18 @@ def get_cumubytes(fname):
                 slice_id = int(words[5])
                 cumu_bytes[slice_id] += int(words[-1]) / end_ts * ratio
                 cumu_rbs[slice_id] += int(words[7]) / end_ts
-    print(cumu_bytes)
-    # print(cumu_rbs)
-    print("\n")
     return cumu_bytes, cumu_rbs
 
 def get_throughput(dname):
-    ratio = 8 / (1000 * 1000)
+    print(dname)
+    aggre_bws = []
     for i in range(TIMES):
-        get_cumubytes( dname + "1_" + str(i) + ".log")
-    for i in range(TIMES):
-        get_cumubytes( dname + "5_" + str(i) + ".log")
+        cumu_bytes, _ = get_cumubytes( dname + str(i) + ".log")
+        aggre_bw = 0
+        for k, v in cumu_bytes.items():
+            aggre_bw += v
+        aggre_bws.append(aggre_bw)
+    print(aggre_bws)
 
 def plot_percell(fname):
     end_ts = 10000 - 100
@@ -89,6 +90,12 @@ def plot_percell(fname):
 matplotlib.rcParams['pdf.fonttype'] = 42
 matplotlib.rcParams['ps.fonttype'] = 42
 
-# get_throughput("./logs/celledge_b")
-plot_percell("./logs/celledge_b1_0")
-plot_percell("./logs/celledge_b5_0")
+get_throughput("./rural_logs/micro1_")
+get_throughput("./rural_logs/micro5_")
+get_throughput("./rural_logs/micro_rand5_")
+get_throughput("./rural_logs/micro_2times5_")
+
+#get_throughput("./rural_logs/4slice1_")
+#get_throughput("./rural_logs/4slice5_")
+#get_throughput("./rural_logs/4slice_rand5_")
+#get_throughput("./rural_logs/4slice_2times5_")
