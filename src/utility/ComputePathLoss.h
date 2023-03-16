@@ -47,11 +47,11 @@ ComputePathLossForInterference (NetworkNode* src, NetworkNode* dst)
 			  dst->GetMobilityModel ()->GetAbsolutePosition ());
 
 	  // Urban Area
-	  pathLoss = 128.1 + (37.6 * log10 (distance * 0.001));
+	  // pathLoss = 128.1 + (37.6 * log10 (distance * 0.001));
 	  // Sub-Urban area
 	  // pathLoss = 128.1 + (37.6 * log10 (distance * 0.001));
 	  // Rural Area
-	  // pathLoss = 100.54 + (34.1 * log10 (distance * 0.001));
+	  pathLoss = 100.54 + (34.1 * log10 (distance * 0.001));
 
 	  if ( ((UserEquipment*) dst)->IsIndoor() )
 	  {

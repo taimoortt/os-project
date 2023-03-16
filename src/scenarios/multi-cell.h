@@ -41,6 +41,7 @@
 #include "../utility/RandomVariable.h"
 #include "../utility/UsersDistribution.h"
 #include "../channel/propagation-model/macrocell-urban-area-channel-realization.h"
+#include "../channel/propagation-model/macrocell-rural-area-channel-realization.h"
 #include "../load-parameters.h"
 #include <iostream>
 #include <queue>
@@ -285,9 +286,14 @@ static void MultiCell (int nbCell, double radius,
       // register ue to the enb
       eNBs->at (j)->RegisterUserEquipment (ue);
       // define the channel realization
-      MacroCellUrbanAreaChannelRealization* c_dl = new MacroCellUrbanAreaChannelRealization (eNBs->at (j), ue);
+      // MacroCellUrbanAreaChannelRealization* c_dl = new MacroCellUrbanAreaChannelRealization (eNBs->at (j), ue);
+      // eNBs->at (j)->GetPhy ()->GetDlChannel ()->GetPropagationLossModel ()->AddChannelRealization (c_dl);
+      // MacroCellUrbanAreaChannelRealization* c_ul = new MacroCellUrbanAreaChannelRealization (ue, eNBs->at (j));
+      // eNBs->at (j)->GetPhy ()->GetUlChannel ()->GetPropagationLossModel ()->AddChannelRealization (c_ul);
+
+      MacroCellRuralAreaChannelRealization* c_dl = new MacroCellRuralAreaChannelRealization (eNBs->at (j), ue);
       eNBs->at (j)->GetPhy ()->GetDlChannel ()->GetPropagationLossModel ()->AddChannelRealization (c_dl);
-      MacroCellUrbanAreaChannelRealization* c_ul = new MacroCellUrbanAreaChannelRealization (ue, eNBs->at (j));
+      MacroCellRuralAreaChannelRealization* c_ul = new MacroCellRuralAreaChannelRealization (ue, eNBs->at (j));
       eNBs->at (j)->GetPhy ()->GetUlChannel ()->GetPropagationLossModel ()->AddChannelRealization (c_ul);
 
       // CREATE DOWNLINK APPLICATION FOR THIS UE

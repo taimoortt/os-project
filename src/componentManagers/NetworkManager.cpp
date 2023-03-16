@@ -769,7 +769,9 @@ NetworkManager::HandoverProcedure(double time, UserEquipment* ue, NetworkNode* o
 {
 #ifdef HANDOVER_DEBUG
               std::cout << "** HO ** \t HandoverProcedure for user "
-            		  <<  ue->GetIDNetworkNode () << std::endl;
+            		  << ue->GetIDNetworkNode () << " from "
+                  << oldTarget->GetIDNetworkNode() << " to "
+                  << newTarget->GetIDNetworkNode() << std::endl;
 #endif
 
   // 1 - deactivate the UE for a time equal to 30 ms
