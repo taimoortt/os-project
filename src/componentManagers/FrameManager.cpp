@@ -136,6 +136,18 @@ FrameManager::GetTTICounter () const
 }
 
 void
+FrameManager::SetRBGSize(int rbg)
+{
+  rbg_size = rbg;
+}
+
+int
+FrameManager::GetRBGSize()
+{
+  return rbg_size;
+}
+
+void
 FrameManager::Start (void)
 {
 #ifdef FRAME_MANAGER_DEBUG
@@ -369,6 +381,7 @@ for (auto iter = enodebs->begin (); iter != enodebs->end (); iter++) {
 void
 FrameManager::CentralDownlinkRBsAllocation(void)
 {
+  int rbg_size = GetRBGSize();
   std::vector<ENodeB*> *enodebs =
     GetNetworkManager ()->GetENodeBContainer ();
   std::vector<DownlinkPacketScheduler*> schedulers;
@@ -398,6 +411,8 @@ FrameManager::CentralDownlinkRBsAllocation(void)
   // Assume that every eNB has same number of RBs
   int nb_of_rbs = schedulers[0]->GetMacEntity()->GetDevice()->GetPhy()
       ->GetBandwidthManager()->GetDlSubChannels().size ();
+  // int nb_of_rbs = no_of_schedulers * 4;
+  // cout << "Number of RBS: " << nb_of_rbs << endl;
   // bool enable_comp = schedulers[0]->enable_comp_;
 
   if (schedulers[0]->enable_tune_weights_) {
@@ -417,8 +432,13 @@ FrameManager::CentralDownlinkRBsAllocation(void)
       RadioSaberDownlinkScheduler* scheduler = (RadioSaberDownlinkScheduler*)(*it);
       scheduler->CalculateSliceQuota();
     }
-    for (int rb_id = 0; rb_id < nb_of_rbs; rb_id++) {
+    // for (int rb_id = 0; rb_id < nb_of_rbs; rb_id++) {
+    //   RadioSaberAllocateOneRB(schedulers, rb_id);
+    // }
+    int rb_id = 0;
+    while (rb_id < nb_of_rbs) { // Allocate in the form of PRBG of size 4
       RadioSaberAllocateOneRB(schedulers, rb_id);
+      rb_id+=rbg_size;
     }
   }
   else if (scheme == 2) {
@@ -723,6 +743,7 @@ void
 FrameManager::RadioSaberAllocateOneRB(
     std::vector<DownlinkPacketScheduler*>& schedulers,
     int rb_id) {
+  int rbg_size = GetRBGSize();
   std::vector<FlowToSchedule*> cell_flows(schedulers.size(), nullptr);
   std::vector<std::pair<int, int>> cell_spectraleff(schedulers.size(), {0,0});
   for (int j = 0; j < schedulers.size(); j++) {
@@ -733,18 +754,24 @@ FrameManager::RadioSaberAllocateOneRB(
     std::vector<double> slice_spectraleff(num_slice, -1);
     std::vector<int> max_metrics(num_slice, -1);
     // calcualte the metrics and get the scheduled flow in every slice
+    // Get Spectral Efficiency of the RBG
+    double spectralEff_RBG = 0.0;
+
     for (auto it = flows->begin(); it != flows->end(); it++) {
       FlowToSchedule* flow = *it;
-      double metric = scheduler->ComputeSchedulingMetric(
-          flow->GetBearer(),
-          flow->GetSpectralEfficiency().at(rb_id),
-          rb_id);
+      for (int i = 0; i < rbg_size; i++) {
+        spectralEff_RBG += flow->GetSpectralEfficiency().at(rb_id+i);
+      }
+
+      double metric = scheduler->ComputeSchedulingMetric(flow->GetBearer(), spectralEff_RBG, rb_id);
+      // double metric = scheduler->ComputeSchedulingMetric(flow->GetBearer(), flow->GetSpectralEfficiency().at(rb_id), rb_id);
       int slice_id = flow->GetSliceID();
       // enterprise schedulers
       if (metric > max_metrics[slice_id]) {
         max_metrics[slice_id] = metric;
         slice_flow[slice_id] = flow;
-        slice_spectraleff[slice_id] = flow->GetSpectralEfficiency().at(rb_id);
+        slice_spectraleff[slice_id] = spectralEff_RBG;
+        // slice_spectraleff[slice_id] = flow->GetSpectralEfficiency().at(rb_id);
       }
     }
     double max_slice_spectraleff = -1;
@@ -795,7 +822,10 @@ FrameManager::FinalizeAllocation(
     FlowToSchedule* flow = cell_flows[cell_id];
     CqiReport& cqi_report = flow->GetCqiWithMuteFeedbacks().at(rb_id);
     cqi_report.final_cqi = cqi_report.cqi;
-    flow->GetListOfAllocatedRBs()->push_back(rb_id);
+    int rbg_size = GetRBGSize();
+    for (int i = 1; i < rbg_size; i++){ // Start i from i = 1 when you want to reserve 25% of the blocks for IM
+      flow->GetListOfAllocatedRBs()->push_back(rb_id + i);
+    }
 
     cells_allocated.insert(cell_id);
     // no neighbor cell or comp disabled, skip
