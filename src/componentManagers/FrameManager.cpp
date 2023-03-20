@@ -137,18 +137,6 @@ FrameManager::GetTTICounter () const
 }
 
 void
-FrameManager::SetRBGSize(int rbg)
-{
-  rbg_size = rbg;
-}
-
-int
-FrameManager::GetRBGSize()
-{
-  return rbg_size;
-}
-
-void
 FrameManager::Start (void)
 {
 #ifdef FRAME_MANAGER_DEBUG
@@ -382,7 +370,6 @@ for (auto iter = enodebs->begin (); iter != enodebs->end (); iter++) {
 void
 FrameManager::CentralDownlinkRBsAllocation(void)
 {
-  int rbg_size = GetRBGSize();
   std::vector<ENodeB*> *enodebs =
     GetNetworkManager ()->GetENodeBContainer ();
   std::vector<DownlinkPacketScheduler*> schedulers;
@@ -439,7 +426,7 @@ FrameManager::CentralDownlinkRBsAllocation(void)
     int rb_id = 0;
     while (rb_id < nb_of_rbs) { // Allocate in the form of PRBG of size 4
       RadioSaberAllocateOneRB(schedulers, rb_id);
-      rb_id+=rbg_size;
+      rb_id += RBG_SIZE;
     }
   }
   else if (scheme == 2) {
@@ -744,7 +731,6 @@ void
 FrameManager::RadioSaberAllocateOneRB(
     std::vector<DownlinkPacketScheduler*>& schedulers,
     int rb_id) {
-  int rbg_size = GetRBGSize();
   std::vector<FlowToSchedule*> cell_flows(schedulers.size(), nullptr);
   std::vector<std::pair<int, int>> cell_spectraleff(schedulers.size(), {0,0});
   for (int j = 0; j < schedulers.size(); j++) {
@@ -756,25 +742,27 @@ FrameManager::RadioSaberAllocateOneRB(
     std::vector<int> max_metrics(num_slice, -1);
     // calcualte the metrics and get the scheduled flow in every slice
     // Get Spectral Efficiency of the RBG
-    double spectralEff_RBG = 0.0;
 
+    // std::cout << rb_id << " ";
     for (auto it = flows->begin(); it != flows->end(); it++) {
       FlowToSchedule* flow = *it;
-      for (int i = 0; i < rbg_size; i++) {
-        spectralEff_RBG += flow->GetSpectralEfficiency().at(rb_id+i);
+      double spectraleff_rbg = 0.0;
+      for (int i = 0; i < RBG_SIZE; i++) {
+        spectraleff_rbg += flow->GetSpectralEfficiency().at(rb_id+i);
       }
-
-      double metric = scheduler->ComputeSchedulingMetric(flow->GetBearer(), spectralEff_RBG, rb_id);
+      double metric = scheduler->ComputeSchedulingMetric(flow->GetBearer(), spectraleff_rbg, rb_id);
+      // std::cout << "flow: " << flow->GetBearer()->GetApplication()->GetApplicationID() << "&" << metric << " ";
       // double metric = scheduler->ComputeSchedulingMetric(flow->GetBearer(), flow->GetSpectralEfficiency().at(rb_id), rb_id);
       int slice_id = flow->GetSliceID();
       // enterprise schedulers
       if (metric > max_metrics[slice_id]) {
         max_metrics[slice_id] = metric;
         slice_flow[slice_id] = flow;
-        slice_spectraleff[slice_id] = spectralEff_RBG;
+        slice_spectraleff[slice_id] = spectraleff_rbg;
         // slice_spectraleff[slice_id] = flow->GetSpectralEfficiency().at(rb_id);
       }
     }
+    // std::cout << std::endl;
     double max_slice_spectraleff = -1;
     FlowToSchedule* selected_flow = nullptr;
     for (int i = 0; i < num_slice; i++) {
@@ -789,7 +777,7 @@ FrameManager::RadioSaberAllocateOneRB(
       cell_spectraleff[j].first = j;
       cell_spectraleff[j].second = max_slice_spectraleff;
       // selected_flow->GetListOfAllocatedRBs()->push_back(rb_id);
-      scheduler->slice_target_rbs_[selected_flow->GetSliceID()] -= 1;
+      scheduler->slice_target_rbs_[selected_flow->GetSliceID()] -= RBG_SIZE;
     }
   }
   // after allocation of one RB, reduce the slice_target_rbs_ by one;
@@ -826,43 +814,54 @@ FrameManager::FinalizeAllocation(
     if (flow == nullptr) {
       throw std::runtime_error("cell with no flow");
     }
-    CqiReport& cqi_report = flow->GetCqiWithMuteFeedbacks().at(rb_id);
-    cqi_report.final_cqi = cqi_report.cqi;
-    int rbg_size = GetRBGSize();
-    for (int i = 1; i < rbg_size; i++){ // Start i from i = 1 when you want to reserve 25% of the blocks for IM
+    CqiReport& cqi_report_first = flow->GetCqiWithMuteFeedbacks().at(rb_id);
+    for (int i = 0; i < RBG_SIZE; i++){
+      // Start i from i = 1 when you want to reserve 25% of the blocks for IM
       flow->GetListOfAllocatedRBs()->push_back(rb_id + i);
     }
 
     cells_allocated.insert(cell_id);
     // no neighbor cell or comp disabled, skip
-    if (cqi_report.neighbor_cell == -1 || !enable_comp) {
+    if (cqi_report_first.neighbor_cell == -1 || !enable_comp) {
       continue;
     }
     // Muting logic
-    int tbs_with_mute = amc->GetTBSizeFromMCS(
+    int tbs_with_mute = 0, tbs = 0, tbs_neighbor = 0;
+    int neighbor_cell = cqi_report_first.neighbor_cell;
+    for (int i = 0; i < RBG_SIZE; i++) {
+      CqiReport& cqi_report = flow->GetCqiWithMuteFeedbacks().at(rb_id + i);
+      FlowToSchedule* neighbor_flow = cell_flows[neighbor_cell];
+      CqiReport neighbor_report = neighbor_flow->GetCqiWithMuteFeedbacks().at(rb_id);
+      tbs_with_mute += amc->GetTBSizeFromMCS(
         amc->GetMCSFromCQI(cqi_report.cqi_with_mute));
-    int tbs = amc->GetTBSizeFromMCS(amc->GetMCSFromCQI(cqi_report.cqi));
-    int neighbor_cell = cqi_report.neighbor_cell;
-    FlowToSchedule* neighbor_flow = cell_flows[neighbor_cell];
-    CqiReport neighbor_report = neighbor_flow->GetCqiWithMuteFeedbacks().at(rb_id);
-    int tbs_neighbor = amc->GetTBSizeFromMCS(amc->GetMCSFromCQI(neighbor_report.cqi));
+      tbs += amc->GetTBSizeFromMCS(
+        amc->GetMCSFromCQI(cqi_report.cqi));
+      tbs_neighbor += amc->GetTBSizeFromMCS(
+        amc->GetMCSFromCQI(neighbor_report.cqi));
+    }
 
     // if the neighbor cell is not allocated
     if (cells_allocated.find(neighbor_cell) == cells_allocated.end()) {
       if (cells_muted.find(neighbor_cell) != cells_muted.end()) {
-        cqi_report.final_cqi = cqi_report.cqi_with_mute;
+        for (int i = 0; i < RBG_SIZE; i++) {
+          CqiReport& cqi_report = flow->GetCqiWithMuteFeedbacks().at(rb_id + i);
+          cqi_report.final_cqi = cqi_report.cqi_with_mute;
+        }
       }
-      else if (tbs_with_mute > 1.5 * (tbs_another + tbs)) {
+      else if (tbs_with_mute > 1.5 * (tbs_neighbor + tbs)) {
 #ifdef SCHEDULER_DEBUG
         std::cout << "Mute cell " << neighbor_cell
-          << " rb " << rb_id << " for flow "
+          << " rbg " << rb_id % RBG_SIZE << " for flow "
           << flow->GetBearer()->GetApplication()->GetApplicationID()
           << " tbs_with_mute: " << tbs_with_mute
           << " original_tbs: " << tbs
           << " neighbor_tbs: " << tbs_neighbor << std::endl;
 #endif
         cells_muted.insert(neighbor_cell);
-        cqi_report.final_cqi = cqi_report.cqi_with_mute;
+        for (int i = 0; i < RBG_SIZE; i++) {
+          CqiReport& cqi_report = flow->GetCqiWithMuteFeedbacks().at(rb_id + i);
+          cqi_report.final_cqi = cqi_report.cqi_with_mute;
+        }
         if ((typeid(schedulers[cell_id]).name()) == "RadioSaberDownlinkScheduler") {
           RadioSaberDownlinkScheduler* neighbor = (RadioSaberDownlinkScheduler*)schedulers[neighbor_cell];
           // TBC: there's some issues with this approach

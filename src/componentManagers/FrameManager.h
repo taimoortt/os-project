@@ -43,6 +43,7 @@
 
 class FrameManager {
 public:
+	static const int RBG_SIZE = 4;
 	enum FrameStructure
 	  {
 		FRAME_STRUCTURE_FDD,
@@ -56,7 +57,6 @@ private:
 	int m_nbFrames;
 	int m_nbSubframes;
 	unsigned long m_TTICounter;
-	int rbg_size = 4;
 
 	FrameManager();
 	static FrameManager *ptr;
@@ -102,10 +102,6 @@ public:
 	UpdateTTIcounter (void);
 	unsigned long
 	GetTTICounter (void) const;
-	void
-	SetRBGSize(int);
-	int
-	GetRBGSize();
 
 	void
 	Start (void);
