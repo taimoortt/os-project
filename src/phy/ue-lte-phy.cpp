@@ -42,6 +42,7 @@
 #include "../utility/ComputePathLoss.h"
 #include <map>
 #include <limits>
+#include <cassert>
 
 /*
  * Noise is computed as follows:
@@ -160,6 +161,18 @@ UeLtePhy::StartRx (PacketBurst* p, TransmittedSignal* txSignal)
       pow(10., neighbor_rsrp/10));
   double avg_rsrp = 0;
   double avg_sinr = 0;
+
+  // report SinrReport in RBG instead of RB
+  assert(rxSignalValues.size() % RBG_SIZE == 0);
+  for (int rb_id = 0; rb_id < rxSignalValues.size();) {
+    std::vector<double> rbg_power(rxSignalValues.begin() + rb_id,
+      rxSignalValues.begin() + rb_id + RBG_SIZE);
+    double rbg_sinr = GetEesmEffectiveSinr(rbg_power);
+    for (int i = 0; i < RBG_SIZE; i++) {
+      rxSignalValues[rb_id+i] = rbg_sinr;
+    }
+    rb_id += RBG_SIZE;
+  }
 
   for (it = rxSignalValues.begin(); it != rxSignalValues.end(); it++) {
     double power; // power transmission for the current sub channel [dB]

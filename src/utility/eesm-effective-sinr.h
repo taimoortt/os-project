@@ -26,6 +26,8 @@
 #include <math.h>
 #include <vector>
 
+const int RBG_SIZE = 4;
+
 static double beta_value [20] = {
 1.49,
 1.53,

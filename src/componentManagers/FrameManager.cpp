@@ -741,28 +741,23 @@ FrameManager::RadioSaberAllocateOneRB(
     std::vector<double> slice_spectraleff(num_slice, -1);
     std::vector<int> max_metrics(num_slice, -1);
     // calcualte the metrics and get the scheduled flow in every slice
-    // Get Spectral Efficiency of the RBG
 
-    // std::cout << rb_id << " ";
     for (auto it = flows->begin(); it != flows->end(); it++) {
       FlowToSchedule* flow = *it;
+      // Get Spectral Efficiency of the RBG
       double spectraleff_rbg = 0.0;
       for (int i = 0; i < RBG_SIZE; i++) {
         spectraleff_rbg += flow->GetSpectralEfficiency().at(rb_id+i);
       }
       double metric = scheduler->ComputeSchedulingMetric(flow->GetBearer(), spectraleff_rbg, rb_id);
-      // std::cout << "flow: " << flow->GetBearer()->GetApplication()->GetApplicationID() << "&" << metric << " ";
-      // double metric = scheduler->ComputeSchedulingMetric(flow->GetBearer(), flow->GetSpectralEfficiency().at(rb_id), rb_id);
       int slice_id = flow->GetSliceID();
       // enterprise schedulers
       if (metric > max_metrics[slice_id]) {
         max_metrics[slice_id] = metric;
         slice_flow[slice_id] = flow;
         slice_spectraleff[slice_id] = spectraleff_rbg;
-        // slice_spectraleff[slice_id] = flow->GetSpectralEfficiency().at(rb_id);
       }
     }
-    // std::cout << std::endl;
     double max_slice_spectraleff = -1;
     FlowToSchedule* selected_flow = nullptr;
     for (int i = 0; i < num_slice; i++) {
@@ -851,7 +846,7 @@ FrameManager::FinalizeAllocation(
       else if (tbs_with_mute > 1.5 * (tbs_neighbor + tbs)) {
 #ifdef SCHEDULER_DEBUG
         std::cout << "Mute cell " << neighbor_cell
-          << " rbg " << rb_id % RBG_SIZE << " for flow "
+          << " rbg " << rb_id / RBG_SIZE << " for flow "
           << flow->GetBearer()->GetApplication()->GetApplicationID()
           << " tbs_with_mute: " << tbs_with_mute
           << " original_tbs: " << tbs

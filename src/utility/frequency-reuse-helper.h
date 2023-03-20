@@ -133,17 +133,23 @@ RunFrequencyReuseTechniques(int nodes, int cluster, double bandwidth)
           int counter = 0;
 
           for (int i = 0; i < nodes; i++)
-            {
+          {
     	      // int offset = counter * operatibeSubBands;
             int offset = 0;
-
-       	      BandwidthManager *s = new BandwidthManager (bandwidth, bandwidth, offset, offset);
+       	    BandwidthManager *s = new BandwidthManager (bandwidth, bandwidth, offset, offset);
     	      spectrum.push_back (s);
 
        	      counter++;
     	      if (counter == cluster) counter = 0;
-            }
+          }
         }
+      else if (bandwidth == 100) {
+        for (int i = 0; i < nodes; i++) {
+          int offset = 0;
+       	  BandwidthManager *s = new BandwidthManager (bandwidth, bandwidth, offset, offset);
+    	    spectrum.push_back (s);
+        }
+      }
     }
   else //case TDD
     {
