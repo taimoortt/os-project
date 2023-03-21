@@ -58,8 +58,6 @@ GetUniformUsersDistribution (int idCell, int nbUE)
   double midpoint_x = ((cell_x + cell_x_neighbor)/2);
   double midpoint_y = ((cell_y + cell_y_neighbor)/2);
 
-  double radius = (cell->GetRadius()*1000)*0.8;
-
   CartesianCoordinates *cellCoordinates = cell->GetCellCenterPosition();
   double r; double angle;
 
@@ -67,18 +65,10 @@ GetUniformUsersDistribution (int idCell, int nbUE)
   {
     // r = (double) (rand() % (int)(cell->GetRadius()*1000) * 2.732);
     r = (double) (rand() % (int)(cell->GetRadius()*1000) * 4);
-	  angle = (double)(rand() %360) * ((2*3.14)/360);
-
-	  CartesianCoordinates *newCoordinates = GetCartesianCoordinatesFromPolar (r, angle);
-
-	  //Compute absoluteCoordinates
-	  // newCoordinates->SetCoordinateX (cellCoordinates->GetCoordinateX () + newCoordinates->GetCoordinateX ());
-	  // newCoordinates->SetCoordinateY (cellCoordinates->GetCoordinateY () + newCoordinates->GetCoordinateY ());
-    // The following 2 lines are redundant since the function Cartesian to Polar already returns a CC object which already has the x,y values set.
-    // newCoordinates->SetCoordinateX (newCoordinates->GetCoordinateX ());
-	  // newCoordinates->SetCoordinateY (newCoordinates->GetCoordinateY ());
-
-	  vectorOfCoordinates->push_back(newCoordinates);
+    angle = (double)(rand() %360) * ((2*3.14)/360);
+    CartesianCoordinates *newCoordinates = GetCartesianCoordinatesFromPolar (r, angle);
+    //Compute absoluteCoordinates
+    vectorOfCoordinates->push_back(newCoordinates);
   }
 
   // for (int i = 0; i < nbUE; i++)
@@ -88,15 +78,6 @@ GetUniformUsersDistribution (int idCell, int nbUE)
   //     midpoint_x + random_num, midpoint_y + random_num);
 	//   vectorOfCoordinates->push_back(newCoordinates);
   // }
-
-  for (int i = 0; i < nbUE/2; i++)
-    {
-      double random_num = (double)(rand() % 60);
-      // cout << "Random Number : " << random_num << endl;
-      // cout << "MP_x : " << midpoint_x << "\tMP_y : " << midpoint_y << endl;
-      CartesianCoordinates *newCoordinates = new CartesianCoordinates(midpoint_x + random_num, midpoint_y + random_num);
-	    vectorOfCoordinates->push_back(newCoordinates);
-    }
 
   return vectorOfCoordinates;
 }
