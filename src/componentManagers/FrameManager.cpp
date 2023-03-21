@@ -762,7 +762,7 @@ FrameManager::RadioSaberAllocateOneRB(
     FlowToSchedule* selected_flow = nullptr;
     for (int i = 0; i < num_slice; i++) {
       if (slice_spectraleff[i] > max_slice_spectraleff
-        && scheduler->slice_target_rbs_[i] > 0) {
+        && scheduler->slice_rbgs_quota_[i] > 0) {
         max_slice_spectraleff = slice_spectraleff[i];
         selected_flow = slice_flow[i];
       }
@@ -771,11 +771,10 @@ FrameManager::RadioSaberAllocateOneRB(
       cell_flows[j] = selected_flow;
       cell_spectraleff[j].first = j;
       cell_spectraleff[j].second = max_slice_spectraleff;
-      // selected_flow->GetListOfAllocatedRBs()->push_back(rb_id);
-      scheduler->slice_target_rbs_[selected_flow->GetSliceID()] -= RBG_SIZE;
+      scheduler->slice_rbgs_quota_[selected_flow->GetSliceID()] -= 1;
     }
   }
-  // after allocation of one RB, reduce the slice_target_rbs_ by one;
+  // after allocation of one RB, reduce the slice_rbgs_quota_ by one;
   sort(cell_spectraleff.begin(), cell_spectraleff.end(),
     [](const auto& a, const auto& b) -> bool {
       return a.second > b.second;
@@ -925,5 +924,5 @@ FrameManager::RadioSaberAllocateOneRBGlobal(
       slice_quota[selected_flow->GetSliceID()] -= 1;
     }
   }
-  // after allocation of one RB, reduce the slice_target_rbs_ by one;
+  // after allocation of one RB, reduce the slice_rbgs_quota_ by one;
 }

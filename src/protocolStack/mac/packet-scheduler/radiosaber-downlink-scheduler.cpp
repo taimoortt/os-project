@@ -11,6 +11,7 @@
 #include "../../../phy/lte-phy.h"
 #include "../../../core/spectrum/bandwidth-manager.h"
 #include "../../../core/idealMessages/ideal-control-messages.h"
+#include "../../../utility/eesm-effective-sinr.h"
 #include <cassert>
 #include <unordered_set>
 
@@ -20,8 +21,9 @@ RadioSaberDownlinkScheduler::RadioSaberDownlinkScheduler(std::string config_fnam
 : DownlinkPacketScheduler(config_fname) {
   SetMacEntity (0);
   CreateFlowsToSchedule ();
+  slice_rbs_share_.resize(slice_ctx_.num_slices_, 0);
   slice_rbs_offset_.resize(slice_ctx_.num_slices_, 0);
-  slice_target_rbs_.resize(slice_ctx_.num_slices_, 0);
+  slice_rbgs_quota_.resize(slice_ctx_.num_slices_, 0);
   std::cout << "construct RadioSaber Downlink Scheduler." << std::endl;
 }
 
@@ -34,10 +36,26 @@ void RadioSaberDownlinkScheduler::CalculateSliceQuota()
 {
   int nb_rbs = GetMacEntity()->GetDevice()->GetPhy()
     ->GetBandwidthManager()->GetDlSubChannels().size();
+  std::fill(slice_rbgs_quota_.begin(), slice_rbgs_quota_.end(), 0);
+  int extra_rbgs = nb_rbs / RBG_SIZE;
+  for (int i = 0; i < slice_ctx_.num_slices_; i++) {
+    slice_rbs_share_[i] = nb_rbs * slice_ctx_.weights_[i] + slice_rbs_offset_[i];
+    slice_rbgs_quota_[i] = (int)(slice_rbs_share_[i] / RBG_SIZE);
+    extra_rbgs -= slice_rbgs_quota_[i];
+  }
+  int rand_idx = rand() % slice_ctx_.num_slices_;
+  slice_rbgs_quota_[rand_idx] += extra_rbgs;
+  for (int i = 0; i < slice_ctx_.num_slices_; i++) {
+    if (i == rand_idx) {
+      slice_rbgs_quota_[i] += extra_rbgs % slice_ctx_.num_slices_;
+    }
+    slice_rbgs_quota_[i] += extra_rbgs / slice_ctx_.num_slices_;
+  }
+  // now we reallocate the RBGs of slices with no traffic to slices with traffic
+  // step1: find those slices with data
   FlowsToSchedule* flows = GetFlowsToSchedule();
   std::unordered_set<int> slice_with_data;
-  std::fill(slice_target_rbs_.begin(), slice_target_rbs_.end(), 0);
-  int extra_rbs = nb_rbs;
+  extra_rbgs = nb_rbs / RBG_SIZE;
   for (auto it = flows->begin(); it != flows->end(); ++it) {
     assert(*it != nullptr);
     int slice_id = (*it)->GetSliceID();
@@ -45,24 +63,21 @@ void RadioSaberDownlinkScheduler::CalculateSliceQuota()
       continue;
     }
     slice_with_data.insert(slice_id);
-    slice_target_rbs_[slice_id] = (int)(nb_rbs * slice_ctx_.weights_[slice_id])
-      + slice_rbs_offset_[slice_id];
-    extra_rbs -= slice_target_rbs_[slice_id];
+    extra_rbgs -= slice_rbgs_quota_[slice_id];
   }
-  if (slice_with_data.size() == 0)
-    return;
-  // we reallocate extra rbs to slices; a random slice gets extra_rbs % num_slice
-  int rand_idx = rand() % slice_with_data.size();
-  for (auto it = slice_with_data.begin(); it != slice_with_data.end(); it++) {
-    int slice_id = *it;
-    slice_target_rbs_[slice_id] += extra_rbs / slice_with_data.size();
-    if (rand_idx == 0) {
-      slice_target_rbs_[slice_id] += extra_rbs % slice_with_data.size();
+  if (extra_rbgs == 0) return;
+  // step2: update slice rbgs quota(set 0 to slice without data, and increase a random slice with extra_rbgs)
+  rand_idx = rand() % slice_with_data.size();
+  for (int i = 0; i < slice_ctx_.num_slices_; i++) {
+    if (slice_with_data.find(i) == slice_with_data.end()) {
+      slice_rbgs_quota_[i] = 0;
     }
-    rand_idx -= 1;
+    else {
+      if (rand_idx == 0)
+        slice_rbgs_quota_[i] += extra_rbgs;
+      rand_idx -= 1;
+    }
   }
-  // reset the offset
-  std::fill(slice_rbs_offset_.begin(), slice_rbs_offset_.end(), 0);
 }
 
 double

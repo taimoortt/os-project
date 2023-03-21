@@ -16,8 +16,9 @@ public:
 	virtual ~RadioSaberDownlinkScheduler();
 	virtual double ComputeSchedulingMetric (RadioBearer *bearer, double spectralEfficiency, int subChannel);
   
+  std::vector<int> slice_rbgs_quota_;
+  std::vector<double> slice_rbs_share_;
   std::vector<double> slice_rbs_offset_;
-  std::vector<int> slice_target_rbs_;
   void CalculateSliceQuota();
 };
 
