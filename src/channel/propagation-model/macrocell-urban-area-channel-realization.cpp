@@ -119,7 +119,11 @@ MacroCellUrbanAreaChannelRealization::GetPathLoss (void)
     }
   */
 
-  m_pathLoss = 128.1 + (37.6 * log10 (distance * 0.001));
+  // the original urban channel model
+  // m_pathLoss = 128.1 + (37.6 * log10 (distance * 0.001));
+  // Instead of applying the macro_rural class for rural channel, we directly update the equation here.
+  // because it's hard to update all channel objects in the simulator(its drawback)
+  m_pathLoss = 100.54 + (34.1 * log10 (distance * 0.001));
 
   UserEquipment* ue;
   if (GetSourceNode ()->GetNodeType () == NetworkNode::TYPE_UE)

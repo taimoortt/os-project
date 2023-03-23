@@ -259,7 +259,7 @@ static void MultiCell (int nbCell, double radius,
       double posY = positions->at (i)->GetCoordinateY ();
       double speedDirection = (double)(rand() %360) * ((2*3.14)/360);;
 
-      UserEquipment* ue = new UserEquipment (idUE + nbCell,
+      UserEquipment* ue = new UserEquipment (idUE,
           posX, posY, speed, speedDirection,
           cells->at (j),
           eNBs->at (j),
@@ -286,15 +286,15 @@ static void MultiCell (int nbCell, double radius,
       // register ue to the enb
       eNBs->at (j)->RegisterUserEquipment (ue);
       // define the channel realization
-      // MacroCellUrbanAreaChannelRealization* c_dl = new MacroCellUrbanAreaChannelRealization (eNBs->at (j), ue);
-      // eNBs->at (j)->GetPhy ()->GetDlChannel ()->GetPropagationLossModel ()->AddChannelRealization (c_dl);
-      // MacroCellUrbanAreaChannelRealization* c_ul = new MacroCellUrbanAreaChannelRealization (ue, eNBs->at (j));
-      // eNBs->at (j)->GetPhy ()->GetUlChannel ()->GetPropagationLossModel ()->AddChannelRealization (c_ul);
-
-      MacroCellRuralAreaChannelRealization* c_dl = new MacroCellRuralAreaChannelRealization (eNBs->at (j), ue);
+      MacroCellUrbanAreaChannelRealization* c_dl = new MacroCellUrbanAreaChannelRealization (eNBs->at (j), ue);
       eNBs->at (j)->GetPhy ()->GetDlChannel ()->GetPropagationLossModel ()->AddChannelRealization (c_dl);
-      MacroCellRuralAreaChannelRealization* c_ul = new MacroCellRuralAreaChannelRealization (ue, eNBs->at (j));
+      MacroCellUrbanAreaChannelRealization* c_ul = new MacroCellUrbanAreaChannelRealization (ue, eNBs->at (j));
       eNBs->at (j)->GetPhy ()->GetUlChannel ()->GetPropagationLossModel ()->AddChannelRealization (c_ul);
+
+      // MacroCellRuralAreaChannelRealization* c_dl = new MacroCellRuralAreaChannelRealization (eNBs->at (j), ue);
+      // eNBs->at (j)->GetPhy ()->GetDlChannel ()->GetPropagationLossModel ()->AddChannelRealization (c_dl);
+      // MacroCellRuralAreaChannelRealization* c_ul = new MacroCellRuralAreaChannelRealization (ue, eNBs->at (j));
+      // eNBs->at (j)->GetPhy ()->GetUlChannel ()->GetPropagationLossModel ()->AddChannelRealization (c_ul);
 
       // CREATE DOWNLINK APPLICATION FOR THIS UE
       double start_time = 0.1; // + GetRandomVariable (5.);
@@ -565,7 +565,7 @@ static void MultiCell (int nbCell, double radius,
   }
 
   simulator->SetStop(duration);
-  simulator->Schedule(duration-10, &Simulator::PrintMemoryUsage, simulator);
+  // simulator->Schedule(duration-10, &Simulator::PrintMemoryUsage, simulator);
   simulator->Run ();
 
 }

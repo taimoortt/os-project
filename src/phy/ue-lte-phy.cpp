@@ -198,9 +198,12 @@ UeLtePhy::StartRx (PacketBurst* p, TransmittedSignal* txSignal)
   #ifdef INTERFERENCE_DEBUG
   std::cout << Simulator::Init()->Now() << " UE(" << ue->GetIDNetworkNode() << ")"
     << " average RSRP from serving eNB " << avg_rsrp
-    << " noise " << NOISE << " interference " << 10 * log10(tot_interference_watt)
-    << " SINR " << avg_sinr
-    << " neighbor_diff " << avg_rsrp - neighbor_rsrp << std::endl;
+    << "db neighbor_rsrp " << neighbor_rsrp
+    // it's constant -148.95db
+    // << "db noise " << NOISE
+    << "db tot_interference " << 10 * log10(tot_interference_watt)
+    << "db sinr " << avg_sinr
+    << "db neighbor_diff " << avg_rsrp - neighbor_rsrp << std::endl;
   #endif
 
   //CHECK FOR PHY ERROR
