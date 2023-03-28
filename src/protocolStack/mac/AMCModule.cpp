@@ -311,9 +311,11 @@ AMCModule::GetEfficiencyFromCQI (int cqi)
 {
   int mcs = GetMCSFromCQI (cqi);
   int bits = GetTBSizeFromMCS (mcs);
+  return bits;
   //eff = rate / bandwidth
-  double eff = (bits/0.001)/180000.;
-  return eff;
+  
+  //double eff = (bits/0.001)/180000.;
+  //return eff;
 }
 
 std::vector<int>

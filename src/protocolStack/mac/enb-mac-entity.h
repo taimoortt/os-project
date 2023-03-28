@@ -39,13 +39,17 @@ class SchedulingRequestIdealControlMessage;
 
 struct CqiReport {
   int cqi;              // the "dirty" cqi without muting any cell
-  int cqi_with_mute;    // the cqi with just the neighbor cell muted
-  int neighbor_cell;    // the cell_id of the neighbor cell with highest cqi
+  int cqi_mute_one;    // the cqi with just the neighbor cell muted
+  int cqi_mute_two;
+  int cell_one;
+  int cell_two;
   int final_cqi;        // finalized after the enb mutes and allocate rbs, initialized as cqi
 
-  CqiReport(int _cqi, int _cqi_with_mute, int _neighbor_cell)
-  : cqi(_cqi), cqi_with_mute(_cqi_with_mute),
-    neighbor_cell(_neighbor_cell), final_cqi(_cqi){}
+  CqiReport(int _cqi, int _cqi_mute_one, int _cqi_mute_two,
+    int _cell_one, int _cell_two)
+  : cqi(_cqi), cqi_mute_one(_cqi_mute_one),
+    cqi_mute_two(_cqi_mute_two), cell_one(_cell_one),
+    cell_two(_cell_two), final_cqi(_cqi){}
 };
 
 class EnbMacEntity : public MacEntity

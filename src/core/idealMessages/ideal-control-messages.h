@@ -177,14 +177,17 @@ public:
   {
     int m_idSubChannel;
     int m_cqi;
-    int m_cqi_with_mute;
-    int m_neighbor_cell;
+    int m_cqi_mute_one;
+    int m_cqi_mute_two;
+    int m_cell_one;
+    int m_cell_two;
   };
 
   typedef std::list<struct CqiFeedback>  CqiFeedbacks;
 
   void AddNewRecord (int subChannel, int cqi,
-    int cqi_with_mute, int neighbor_cell);
+    int cqi_mute_one, int cqi_mute_two,
+    int cell_one, int cell_two);
   CqiFeedbacks* GetMessage (void);
 
 private:

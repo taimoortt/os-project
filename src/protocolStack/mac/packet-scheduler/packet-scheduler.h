@@ -72,8 +72,6 @@ public:
 
   void SetSliceID(int slice_id) {m_sliceID = slice_id;}
   int GetSliceID() {return m_sliceID;}
-
-  bool IsMuteRequested(int i);
 };
 
 typedef std::vector<FlowToSchedule*> FlowsToSchedule;

@@ -165,18 +165,19 @@ CqiWithMuteIdealControlMessage::~CqiWithMuteIdealControlMessage (void)
   delete m_cqiFeedbacks;
 }
 
-
 void
 CqiWithMuteIdealControlMessage::AddNewRecord (int subChannel, int cqi,
-  int cqi_with_mute, int neighbor_cell)
+    int cqi_mute_one, int cqi_mute_two,
+    int cell_one, int cell_two)
 {
   CqiFeedback c;
   c.m_idSubChannel = subChannel;
   c.m_cqi = cqi;
-  c.m_cqi_with_mute = cqi_with_mute;
-  c.m_neighbor_cell = neighbor_cell;
-
-  m_cqiFeedbacks->push_back (c);
+  c.m_cqi_mute_one = cqi_mute_one;
+  c.m_cqi_mute_two = cqi_mute_two;
+  c.m_cell_one = cell_one;
+  c.m_cell_two = cell_two;
+  m_cqiFeedbacks->push_back(c);
 }
 
 

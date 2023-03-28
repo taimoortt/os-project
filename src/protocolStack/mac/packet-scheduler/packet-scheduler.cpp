@@ -225,15 +225,6 @@ FlowToSchedule::GetCqiWithMuteFeedbacks (void)
   return m_cqiWithMuteFeedbacks;
 }
 
-bool
-FlowToSchedule::IsMuteRequested(int rb_id)
-{
-  if (m_cqiWithMuteFeedbacks.size() == 0)
-    return false;
-  else
-    return m_cqiWithMuteFeedbacks.at(rb_id).neighbor_cell != -1;
-}
-
 void
 PacketScheduler::InsertFlowToSchedule (RadioBearer* bearer, int dataToTransmit,
   std::vector<double> specEff, std::vector<int>& cqiFeedbacks,

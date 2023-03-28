@@ -136,6 +136,11 @@ public:
     std::vector<DownlinkPacketScheduler*>& schedulers,
     std::vector<FlowToSchedule*>& cell_flows,
     int rb_id);
+	
+  void RadioSaberAllocateOneRBSecondMute(
+    std::vector<DownlinkPacketScheduler*>& schedulers,
+    int rb_id
+  );
   
   std::vector<int> slice_offset_;
   void RadioSaberAllocateOneRBGlobal(

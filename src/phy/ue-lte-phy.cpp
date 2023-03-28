@@ -137,8 +137,10 @@ UeLtePhy::StartRx (PacketBurst* p, TransmittedSignal* txSignal)
   //compute noise + interference
   std::map<int, double> rsrp;
   double tot_interference_watt = 0;
-  double neighbor_rsrp = -std::numeric_limits<double>::infinity();
-  int neighbor_cell_id = -1;
+  double cell_one_rsrp = -std::numeric_limits<double>::infinity();
+  double cell_two_rsrp = -std::numeric_limits<double>::infinity();
+  int cell_one = -1;
+  int cell_two = -1;
   UserEquipment* ue = (UserEquipment*)GetDevice();
   if (GetInterference () != NULL) {
     rsrp = GetInterference ()->ComputeInterference (ue);
@@ -149,16 +151,22 @@ UeLtePhy::StartRx (PacketBurst* p, TransmittedSignal* txSignal)
     if (it->first != ue->GetTargetNode()->GetIDNetworkNode()) {
       tot_interference_watt += it->second;
       double cell_rsrp = 10. * log10(it->second);
-      if (neighbor_rsrp < cell_rsrp)
-        neighbor_rsrp = cell_rsrp;
-        neighbor_cell_id = it->first;
+      if (cell_one_rsrp < cell_rsrp) {
+        cell_two_rsrp = cell_one_rsrp;
+        cell_two = cell_one;
+        cell_one_rsrp = cell_rsrp;
+        cell_one = it->first;
+      }
     }
   }
 
   double noise_interference = 10. * log10 (pow(10., NOISE/10) + tot_interference_watt); // dB
-  double noise_interference_with_mute = 10. * log10(
+  double noise_interference_mute_one = 10. * log10(
       pow(10., NOISE/10) + tot_interference_watt - 
-      pow(10., neighbor_rsrp/10));
+      pow(10., cell_one_rsrp/10));
+  double noise_interference_mute_two = 10. * log10(
+      pow(10., NOISE/10) + tot_interference_watt - 
+      pow(10., cell_two_rsrp/10));
   double avg_rsrp = 0;
   double avg_sinr = 0;
 
@@ -188,8 +196,11 @@ UeLtePhy::StartRx (PacketBurst* p, TransmittedSignal* txSignal)
     // cqi report with muting information
     sinr_report.emplace_back(
       power - noise_interference,
-      power - noise_interference_with_mute,
-      neighbor_cell_id
+      power - noise_interference_mute_one,
+      power - noise_interference_mute_two,
+      0,
+      cell_one,
+      cell_two
     );
   }
   avg_rsrp /= rxSignalValues.size();
@@ -198,12 +209,12 @@ UeLtePhy::StartRx (PacketBurst* p, TransmittedSignal* txSignal)
   #ifdef INTERFERENCE_DEBUG
   std::cout << Simulator::Init()->Now() << " UE(" << ue->GetIDNetworkNode() << ")"
     << " average RSRP from serving eNB " << avg_rsrp
-    << "db neighbor_rsrp " << neighbor_rsrp
+    << "db neighbor_rsrp " << cell_one_rsrp
     // it's constant -148.95db
     // << "db noise " << NOISE
     << "db tot_interference " << 10 * log10(tot_interference_watt)
     << "db sinr " << avg_sinr
-    << "db neighbor_diff " << avg_rsrp - neighbor_rsrp << std::endl;
+    << "db neighbor_diff " << avg_rsrp - cell_one_rsrp << std::endl;
   #endif
 
   //CHECK FOR PHY ERROR

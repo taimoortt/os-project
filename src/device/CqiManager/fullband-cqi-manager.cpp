@@ -84,13 +84,16 @@ FullbandCqiManager::CreateCqiFeedbacks (std::vector<SinrReport> cqi_record)
 
   AMCModule *amc = GetDevice ()->GetProtocolStack ()->GetMacEntity ()->GetAmcModule ();
   std::vector<double> sinr;
-  std::vector<double> sinr_with_mute;
+  std::vector<double> sinr_mute_one;
+  std::vector<double> sinr_mute_two;
   for (auto it = cqi_record.begin(); it != cqi_record.end(); ++it) {
     sinr.push_back(it->sinr);
-    sinr_with_mute.push_back(it->sinr_with_mute);
+    sinr_mute_one.push_back(it->sinr_mute_one);
+    sinr_mute_two.push_back(it->sinr_mute_two);
   }
   std::vector<int> cqi = amc->CreateCqiFeedbacks(sinr);
-  std::vector<int> cqi_with_mute = amc->CreateCqiFeedbacks(sinr_with_mute);
+  std::vector<int> cqi_mute_one = amc->CreateCqiFeedbacks(sinr_mute_one);
+  std::vector<int> cqi_mute_two = amc->CreateCqiFeedbacks(sinr_mute_two);
 
   CqiWithMuteIdealControlMessage *msg = new CqiWithMuteIdealControlMessage ();
   msg->SetSourceDevice (thisNode);
@@ -101,7 +104,8 @@ FullbandCqiManager::CreateCqiFeedbacks (std::vector<SinrReport> cqi_record)
 
   for (int i = 0; i < nbSubChannels; i++) {
     msg->AddNewRecord (dlSubChannels.at (i), cqi.at (i),
-      cqi_with_mute.at(i), cqi_record.at(i).neighbor_cell);
+      cqi_mute_one.at(i), cqi_mute_two.at(i),
+      cqi_record.at(i).cell_one, cqi_record.at(i).cell_two);
   }
 
   SetLastSent ();

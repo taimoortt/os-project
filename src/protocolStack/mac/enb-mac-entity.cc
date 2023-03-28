@@ -159,7 +159,8 @@ EnbMacEntity::ReceiveCqiWithMuteIdealControlMessage(CqiWithMuteIdealControlMessa
     std::vector<int> cqi_feedback;
     for (auto it = cqi->begin(); it != cqi->end(); it++) {
       cqi_with_mute_feedback.emplace_back(
-        it->m_cqi, it->m_cqi_with_mute, it->m_neighbor_cell
+        it->m_cqi, it->m_cqi_mute_one, it->m_cqi_mute_two,
+        it->m_cell_one, it->m_cell_two
       );
       cqi_feedback.push_back(it->m_cqi);
     }

@@ -28,13 +28,29 @@
 class NetworkNode;
 
 struct SinrReport {
-  double sinr;
-  double sinr_with_mute;
-  int neighbor_cell;  // if neighbor_cell is -1, we don't mute
+//   double sinr;
+//   double sinr_with_mute;
+//   int neighbor_cell;  // if neighbor_cell is -1, we don't mute
 
-  SinrReport(double _sinr, double _sinr_with_mute, int _neighbor_cell)
-  : sinr(_sinr), sinr_with_mute(_sinr_with_mute),
-    neighbor_cell(_neighbor_cell) {}
+//   SinrReport(double _sinr, double _sinr_with_mute, int _neighbor_cell)
+//   : sinr(_sinr), sinr_with_mute(_sinr_with_mute),
+//     neighbor_cell(_neighbor_cell) {}
+	double sinr;
+	double sinr_mute_one;
+	double sinr_mute_two;
+	double sinr_mute_both;
+	int cell_one;
+	int cell_two;
+	SinrReport(double _sinr, double _sinr_mute_one,
+		double _sinr_mute_two, double _sinr_mute_both,
+		int _cell_one, int _cell_two) {
+		sinr = _sinr;
+		sinr_mute_one = _sinr_mute_one;
+		sinr_mute_two = _sinr_mute_two;
+		sinr_mute_both = _sinr_mute_both;
+		cell_one = _cell_one;
+		cell_two = _cell_two;
+	}
 };
 
 class CqiManager {
