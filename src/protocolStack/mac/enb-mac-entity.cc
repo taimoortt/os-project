@@ -31,7 +31,7 @@
 #include "../../device/UserEquipment.h"
 #include "../../device/ENodeB.h"
 #include "../../load-parameters.h"
-
+#include <cmath>
 
 EnbMacEntity::EnbMacEntity ()
 {
@@ -169,6 +169,28 @@ EnbMacEntity::ReceiveCqiWithMuteIdealControlMessage(CqiWithMuteIdealControlMessa
   }
   else {
     std::cout << "ERROR: received cqi from unknow ue!"<< std::endl;
+  }
+}
+
+void
+EnbMacEntity::ReceiveRSRPIdealControlMessage(RSRPIdealControlMessage* msg)
+{
+  RSRPIdealControlMessage::RSRPFeedback *feedback = msg->GetMessage ();
+
+  UserEquipment* ue = (UserEquipment*) msg->GetSourceDevice ();
+  ENodeB* enb = (ENodeB*) GetDevice ();
+  ENodeB::UserEquipmentRecord* record =
+    enb->GetUserEquipmentRecord (ue->GetIDNetworkNode ());
+  RSRPReport report(
+    feedback->m_rx_power, feedback->m_rsrp_interference,
+    feedback->device_noise, feedback->serve_node);
+  std::vector<int> cqi_feedback(feedback->m_rx_power.size(), 0);
+  if (record != NULL) {
+    record->SetRSRP(report);
+    record->SetCQI(cqi_feedback);
+  }
+  else {
+    std::cout << "ERROR: received rsrp from unknow ue!"<< std::endl;
   }
 }
 

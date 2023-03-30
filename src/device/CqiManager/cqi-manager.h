@@ -24,6 +24,7 @@
 
 #include <vector>
 #include <map>
+#include <cmath>
 
 class NetworkNode;
 
@@ -50,6 +51,34 @@ struct SinrReport {
 		sinr_mute_both = _sinr_mute_both;
 		cell_one = _cell_one;
 		cell_two = _cell_two;
+	}
+};
+
+struct RSRPReport {
+	std::vector<double> rx_power;
+	std::map<int, double> rsrp_interference;
+	double device_noise;
+	std::vector<double> noise_interfere_watt;
+	std::vector<int> final_cqi;
+	int serve_node;
+	RSRPReport() {}
+	
+	RSRPReport(std::vector<double>& _rx_power,
+		std::map<int, double>& _rsrp_interference,
+		double _device_noise, int _serve_node) {
+		rx_power = _rx_power;
+		rsrp_interference = _rsrp_interference;
+		device_noise = _device_noise;
+		serve_node = _serve_node;
+		double noise_interfere_tot = pow(10., _device_noise/10);
+		for(auto it = rsrp_interference.begin(); it != rsrp_interference.end(); it++) {
+			if (it->first != _serve_node)
+				noise_interfere_tot += pow(10, it->second/10);
+		}
+		noise_interfere_watt = std::vector<double>(
+			_rx_power.size(), noise_interfere_tot);
+		final_cqi = std::vector<int>(
+			_rx_power.size(), 0);
 	}
 };
 
@@ -81,7 +110,8 @@ public:
 	long int GetLastSent (void);
 
 	virtual void CreateCqiFeedbacks (std::vector<double> sinr) = 0;
-  virtual void CreateCqiFeedbacks (std::vector<SinrReport> cqi_records) = 0;
+  	virtual void CreateCqiFeedbacks (std::vector<SinrReport> cqi_records) = 0;
+	virtual void CreateCqiFeedbacks (RSRPReport rsrp_record) = 0;
 
 	bool NeedToSendFeedbacks (void);
 

@@ -226,9 +226,22 @@ FlowToSchedule::GetCqiWithMuteFeedbacks (void)
 }
 
 void
+FlowToSchedule::SetRSRPReport(RSRPReport& rsrp_report)
+{
+  m_rsrp_report = rsrp_report;
+}
+
+RSRPReport&
+FlowToSchedule::GetRSRPReport(void)
+{
+  return m_rsrp_report;
+}
+
+void
 PacketScheduler::InsertFlowToSchedule (RadioBearer* bearer, int dataToTransmit,
-  std::vector<double> specEff, std::vector<int>& cqiFeedbacks,
-  std::vector<CqiReport>& cqiWithMuteFeedbacks)
+  std::vector<int>& cqiFeedbacks,
+  std::vector<CqiReport>& cqiWithMuteFeedbacks,
+  RSRPReport rsrp_report)
 {
 #ifdef SCHEDULER_DEBUG
 	std::cerr << "\t  --> selected flow: "
@@ -237,9 +250,9 @@ PacketScheduler::InsertFlowToSchedule (RadioBearer* bearer, int dataToTransmit,
 #endif
 
   FlowToSchedule *flowToSchedule = new FlowToSchedule(bearer, dataToTransmit);
-  flowToSchedule->SetSpectralEfficiency (specEff);
   flowToSchedule->SetCqiFeedbacks (cqiFeedbacks);
   flowToSchedule->SetCqiWithMuteFeedbacks(cqiWithMuteFeedbacks);
+  flowToSchedule->SetRSRPReport(rsrp_report);
   flowToSchedule->SetSliceID(bearer->GetDestination()->GetSliceID());
 
   GetFlowsToSchedule ()->push_back(flowToSchedule);

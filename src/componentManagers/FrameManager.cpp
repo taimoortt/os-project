@@ -374,12 +374,14 @@ FrameManager::CentralDownlinkRBsAllocation(void)
     GetNetworkManager ()->GetENodeBContainer ();
   std::vector<DownlinkPacketScheduler*> schedulers;
   // initialization
+  int counter = 0;
   for (auto it = enodebs->begin(); it != enodebs->end(); it++) {
     ENodeB* enb = *it;
     DownlinkPacketScheduler* scheduler =
       (DownlinkPacketScheduler*)enb->GetDLScheduler();
-    assert(scheduler != NULL);
+    assert(counter == enb->GetIDNetworkNode());
     schedulers.push_back(scheduler);
+    counter += 1;
   }
   // set up schedulers
   bool available_flow = false;
@@ -731,14 +733,19 @@ FrameManager::RadioSaberAllocateOneRBSecondMute(
     std::vector<DownlinkPacketScheduler*>& schedulers,
     int rb_id) {
   AMCModule* amc = schedulers[0]->GetMacEntity()->GetAmcModule();
-  int max_sum_tbs = 0;
-  int final_mute_id = schedulers.size();  // which means no cell is muted
+  bool enable_comp = schedulers[0]->enable_comp_;
+  int final_mute_id = schedulers.size();
+  // if not enable_comp, start from schedulers.size() which means no muting
+  // if enable_comp, start from every possible muting cell
+  int mute_id = enable_comp ? 0 : final_mute_id;  
   std::vector<std::vector<FlowToSchedule*>> cell_flows_with_mute(schedulers.size());
+  int max_sum_tbs = 0;
   std::vector<int> tbs_with_mute;
-  for (int mute_id = 0; mute_id <= schedulers.size(); mute_id++) {
+  for (; mute_id <= schedulers.size(); mute_id++) {
     int sum_tbs = 0;
     for (int j = 0; j < schedulers.size(); j++) {
-      RadioSaberDownlinkScheduler* scheduler = (RadioSaberDownlinkScheduler*)schedulers[j];
+      RadioSaberDownlinkScheduler* scheduler =
+        (RadioSaberDownlinkScheduler*)schedulers[j];
       // skip the muted cell
       if (j == mute_id) {
         cell_flows_with_mute[j].push_back(nullptr);
@@ -752,21 +759,20 @@ FrameManager::RadioSaberAllocateOneRBSecondMute(
       std::vector<int> max_metrics(num_slice, -1);
       for (auto it = flows->begin(); it != flows->end(); it++) {
         FlowToSchedule* flow = *it;
-        auto& cqi_report = flow->GetCqiWithMuteFeedbacks();
+        auto& rsrp_report = flow->GetRSRPReport();
         // under the current muting assumption
         double spectraleff_rbg = 0.0;
-        for (int i = 0; i < RBG_SIZE; i++) {
-          int cqi_under_mute = cqi_report[rb_id+i].cqi;
-          if (mute_id == cqi_report[rb_id+i].cell_one) {
-            cqi_under_mute = cqi_report[rb_id+i].cqi_mute_one;
+        for (int i = rb_id; i < RBG_SIZE+rb_id; i++) {
+          double in_under_mute = rsrp_report.noise_interfere_watt[i];
+          if (mute_id != schedulers.size()) {
+            in_under_mute -= pow(10., rsrp_report.rsrp_interference[mute_id]/10.);
           }
-          else if (mute_id == cqi_report[rb_id+i].cell_two) {
-            cqi_under_mute = cqi_report[rb_id+i].cqi_mute_two;
-          }
+          int cqi_under_mute = amc->GetCQIFromSinr(
+            rsrp_report.rx_power[i] - 10. * log10(in_under_mute));
           spectraleff_rbg += amc->GetEfficiencyFromCQI(cqi_under_mute);
         }
-        double metric = scheduler->ComputeSchedulingMetric(flow->GetBearer(),
-          spectraleff_rbg, rb_id);
+        double metric = scheduler->ComputeSchedulingMetric(
+          flow->GetBearer(), spectraleff_rbg, rb_id);
         int slice_id = flow->GetSliceID();
         // enterprise schedulers
         if (metric > max_metrics[slice_id]) {
@@ -804,24 +810,129 @@ FrameManager::RadioSaberAllocateOneRBSecondMute(
     if (j == final_mute_id) {
       continue;
     }
-    RadioSaberDownlinkScheduler* scheduler = (RadioSaberDownlinkScheduler*)schedulers[j];
-    FlowToSchedule* flow = cell_flows_with_mute[j][final_mute_id];
-    auto& cqi_report = flow->GetCqiWithMuteFeedbacks();
+    RadioSaberDownlinkScheduler* scheduler =
+      (RadioSaberDownlinkScheduler*)schedulers[j];
+    FlowToSchedule* flow;
+    if (enable_comp) {
+      flow = cell_flows_with_mute[j][final_mute_id];
+    }
+    else {
+      flow = cell_flows_with_mute[j][0];
+    }
+    auto& rsrp_report = flow->GetRSRPReport();
     // under the current muting assumption
-    for (int i = 0; i < RBG_SIZE; i++) {
-      if (final_mute_id == cqi_report[rb_id+i].cell_one) {
-        cqi_report[rb_id+i].final_cqi = cqi_report[rb_id+i].cqi_mute_one;
+    for (int i = rb_id; i < RBG_SIZE+rb_id; i++) {
+      double in_under_mute = rsrp_report.noise_interfere_watt[i];
+      if (final_mute_id != schedulers.size()) {
+        in_under_mute -= pow(10., rsrp_report.rsrp_interference[final_mute_id]/10.);
       }
-      else if (final_mute_id == cqi_report[rb_id+i].cell_two) {
-        cqi_report[rb_id+i].final_cqi = cqi_report[rb_id+i].cqi_mute_two;
-      }
+      int cqi_under_mute = amc->GetCQIFromSinr(
+        rsrp_report.rx_power[i] - 10. * log10(in_under_mute));
+      flow->GetCqiFeedbacks()[i] = cqi_under_mute;
     }
     scheduler->slice_rbgs_quota_[flow->GetSliceID()] -= 1;
-    for (int i = 0; i < RBG_SIZE; i++){
-      flow->GetListOfAllocatedRBs()->push_back(rb_id + i);
+    for (int i = rb_id; i < RBG_SIZE+rb_id; i++){
+      flow->GetListOfAllocatedRBs()->push_back(i);
     }
   }
 }
+
+// void
+// FrameManager::RadioSaberAllocateOneRBSecondMute(
+//     std::vector<DownlinkPacketScheduler*>& schedulers,
+//     int rb_id) {
+//   AMCModule* amc = schedulers[0]->GetMacEntity()->GetAmcModule();
+//   int max_sum_tbs = 0;
+//   int final_mute_id = schedulers.size();  // which means no cell is muted
+//   std::vector<std::vector<FlowToSchedule*>> cell_flows_with_mute(schedulers.size());
+//   std::vector<int> tbs_with_mute;
+//   for (int mute_id = 0; mute_id <= schedulers.size(); mute_id++) {
+//     int sum_tbs = 0;
+//     for (int j = 0; j < schedulers.size(); j++) {
+//       RadioSaberDownlinkScheduler* scheduler = (RadioSaberDownlinkScheduler*)schedulers[j];
+//       // skip the muted cell
+//       if (j == mute_id) {
+//         cell_flows_with_mute[j].push_back(nullptr);
+//         continue;
+//       }
+//       FlowsToSchedule* flows = scheduler->GetFlowsToSchedule();
+//       int num_slice = scheduler->slice_ctx_.num_slices_;
+//       // enterprise scheduling for every slice
+//       std::vector<FlowToSchedule*> slice_flow(num_slice, nullptr);
+//       std::vector<double> slice_spectraleff(num_slice, -1);
+//       std::vector<int> max_metrics(num_slice, -1);
+//       for (auto it = flows->begin(); it != flows->end(); it++) {
+//         FlowToSchedule* flow = *it;
+//         auto& cqi_report = flow->GetCqiWithMuteFeedbacks();
+//         // under the current muting assumption
+//         double spectraleff_rbg = 0.0;
+//         for (int i = 0; i < RBG_SIZE; i++) {
+//           int cqi_under_mute = cqi_report[rb_id+i].cqi;
+//           if (mute_id == cqi_report[rb_id+i].cell_one) {
+//             cqi_under_mute = cqi_report[rb_id+i].cqi_mute_one;
+//           }
+//           else if (mute_id == cqi_report[rb_id+i].cell_two) {
+//             cqi_under_mute = cqi_report[rb_id+i].cqi_mute_two;
+//           }
+//           spectraleff_rbg += amc->GetEfficiencyFromCQI(cqi_under_mute);
+//         }
+//         double metric = scheduler->ComputeSchedulingMetric(flow->GetBearer(),
+//           spectraleff_rbg, rb_id);
+//         int slice_id = flow->GetSliceID();
+//         // enterprise schedulers
+//         if (metric > max_metrics[slice_id]) {
+//           max_metrics[slice_id] = metric;
+//           slice_flow[slice_id] = flow;
+//           slice_spectraleff[slice_id] = spectraleff_rbg;
+//         }
+//       }
+//       double max_slice_spectraleff = -1;
+//       FlowToSchedule* selected_flow = nullptr;
+//       for (int i = 0; i < num_slice; i++) {
+//         if (slice_spectraleff[i] > max_slice_spectraleff
+//           && scheduler->slice_rbgs_quota_[i] > 0) {
+//           max_slice_spectraleff = slice_spectraleff[i];
+//           selected_flow = slice_flow[i];
+//         }
+//       }
+//       if (selected_flow) {
+//         cell_flows_with_mute[j].push_back(selected_flow);
+//         sum_tbs += max_slice_spectraleff;
+//       }
+//     }
+//     tbs_with_mute.push_back(sum_tbs);
+//     if (sum_tbs > max_sum_tbs) {
+//       max_sum_tbs = sum_tbs;
+//       final_mute_id = mute_id;
+//     }
+//   }
+//   std::cout << "RB: " << rb_id << " tbs with mutes: ";
+//   for (int i = 0; i < tbs_with_mute.size(); i++) {
+//     std::cout << tbs_with_mute[i] << ", ";
+//   }
+//   std::cout << std::endl;
+//   for (int j = 0; j < schedulers.size(); j++) {
+//     if (j == final_mute_id) {
+//       continue;
+//     }
+//     RadioSaberDownlinkScheduler* scheduler = (RadioSaberDownlinkScheduler*)schedulers[j];
+//     FlowToSchedule* flow = cell_flows_with_mute[j][final_mute_id];
+//     auto& cqi_report = flow->GetCqiWithMuteFeedbacks();
+//     // under the current muting assumption
+//     for (int i = 0; i < RBG_SIZE; i++) {
+//       if (final_mute_id == cqi_report[rb_id+i].cell_one) {
+//         cqi_report[rb_id+i].final_cqi = cqi_report[rb_id+i].cqi_mute_one;
+//       }
+//       else if (final_mute_id == cqi_report[rb_id+i].cell_two) {
+//         cqi_report[rb_id+i].final_cqi = cqi_report[rb_id+i].cqi_mute_two;
+//       }
+//     }
+//     scheduler->slice_rbgs_quota_[flow->GetSliceID()] -= 1;
+//     for (int i = 0; i < RBG_SIZE; i++){
+//       flow->GetListOfAllocatedRBs()->push_back(rb_id + i);
+//     }
+//   }
+// }
 
 void
 FrameManager::RadioSaberAllocateOneRB(

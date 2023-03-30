@@ -126,7 +126,7 @@ UeLtePhy::StartRx (PacketBurst* p, TransmittedSignal* txSignal)
 #endif
 
   m_measuredSinr.clear();
-  std::vector<SinrReport> sinr_report;
+  // std::vector<SinrReport> sinr_report;
 
   //COMPUTE THE SINR
   std::vector<double> rxSignalValues;
@@ -158,6 +158,7 @@ UeLtePhy::StartRx (PacketBurst* p, TransmittedSignal* txSignal)
         cell_one = it->first;
       }
     }
+    rsrp[it->first] = 10. * log10(it->second);
   }
 
   double noise_interference = 10. * log10 (pow(10., NOISE/10) + tot_interference_watt); // dB
@@ -181,7 +182,6 @@ UeLtePhy::StartRx (PacketBurst* p, TransmittedSignal* txSignal)
     }
     rb_id += RBG_SIZE;
   }
-
   for (it = rxSignalValues.begin(); it != rxSignalValues.end(); it++) {
     double power; // power transmission for the current sub channel [dB]
     if ((*it) != 0.) {
@@ -194,15 +194,17 @@ UeLtePhy::StartRx (PacketBurst* p, TransmittedSignal* txSignal)
     avg_rsrp += power;
     avg_sinr += (power - noise_interference);
     // cqi report with muting information
-    sinr_report.emplace_back(
-      power - noise_interference,
-      power - noise_interference_mute_one,
-      power - noise_interference_mute_two,
-      0,
-      cell_one,
-      cell_two
-    );
+    // sinr_report.emplace_back(
+    //   power - noise_interference,
+    //   power - noise_interference_mute_one,
+    //   power - noise_interference_mute_two,
+    //   0,
+    //   cell_one,
+    //   cell_two
+    // );
   }
+  RSRPReport rsrp_report(rxSignalValues, rsrp,
+    NOISE, ue->GetTargetNode()->GetIDNetworkNode());
   avg_rsrp /= rxSignalValues.size();
   avg_sinr /= rxSignalValues.size();
 
@@ -268,7 +270,8 @@ UeLtePhy::StartRx (PacketBurst* p, TransmittedSignal* txSignal)
 
   //CQI report
   // CreateCqiFeedbacks (m_measuredSinr);
-  CreateCqiFeedbacks(sinr_report);
+  // CreateCqiFeedbacks(sinr_report);
+  CreateCqiFeedbacks(rsrp_report);
 
   m_channelsForRx.clear ();
   m_channelsForTx.clear ();
@@ -291,6 +294,15 @@ UeLtePhy::CreateCqiFeedbacks (std::vector<double> sinr)
 
 void
 UeLtePhy::CreateCqiFeedbacks (std::vector<SinrReport> record)
+{
+  UserEquipment* thisNode = (UserEquipment*) GetDevice ();
+  if (thisNode->GetCqiManager ()->NeedToSendFeedbacks ()) {
+    thisNode->GetCqiManager ()->CreateCqiFeedbacks (record);
+  }
+}
+
+void
+UeLtePhy::CreateCqiFeedbacks (RSRPReport record)
 {
   UserEquipment* thisNode = (UserEquipment*) GetDevice ();
   if (thisNode->GetCqiManager ()->NeedToSendFeedbacks ()) {

@@ -24,6 +24,8 @@
 #define IDEAL_CONTROL_MESSAGES_H
 
 #include <list>
+#include <vector>
+#include <map>
 
 class NetworkNode;
 
@@ -40,6 +42,7 @@ public:
   {
     CQI_FEEDBACKS,
     CQI_WITH_MUTE_FEEDBACKS,
+    RSRP_FEEDBACKS,
     ALLOCATION_MAP,
     ARQ_RLC_ACK,
     SCHEDULING_REQUEST
@@ -192,6 +195,29 @@ public:
 
 private:
   CqiFeedbacks *m_cqiFeedbacks;
+};
+
+class RSRPIdealControlMessage : public IdealControlMessage
+{
+public:
+  RSRPIdealControlMessage(void);
+  virtual ~RSRPIdealControlMessage(void);
+
+  struct RSRPFeedback
+  {
+    std::vector<double> m_rx_power;
+    std::map<int, double> m_rsrp_interference;
+    double device_noise;
+    int serve_node;
+  };
+
+  void AddNewRecord(std::vector<double>& rx_power,
+    std::map<int, double>& rsrp_interference,
+    double device_noise, int serve_node);
+  RSRPFeedback* GetMessage(void);
+
+private:
+  RSRPFeedback *m_rsrp_feedback;
 };
 
 #endif /* CQI_IDEAL_CONTROL_MESSAGES_H */

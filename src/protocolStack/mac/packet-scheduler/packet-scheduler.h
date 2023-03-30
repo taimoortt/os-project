@@ -25,6 +25,7 @@
 
 #include <vector>
 #include "../../../core/idealMessages/ideal-control-messages.h"
+#include "../../../device/CqiManager/cqi-manager.h"
 
 class MacEntity;
 class PacketBurst;
@@ -46,6 +47,7 @@ private:
   std::vector<int> m_listOfSelectedMCS;
   std::vector<int> m_cqiFeedbacks;
   std::vector<CqiReport> m_cqiWithMuteFeedbacks;
+  RSRPReport m_rsrp_report;
 
 public:
   FlowToSchedule(RadioBearer* bearer,
@@ -69,6 +71,9 @@ public:
   std::vector<int>& GetCqiFeedbacks (void);
   void SetCqiWithMuteFeedbacks(std::vector<CqiReport>& cqi_withmute_feedbacks);
   std::vector<CqiReport>& GetCqiWithMuteFeedbacks(void);
+  void SetRSRPReport(RSRPReport& report);
+  RSRPReport& GetRSRPReport(void);
+
 
   void SetSliceID(int slice_id) {m_sliceID = slice_id;}
   int GetSliceID() {return m_sliceID;}
@@ -100,9 +105,9 @@ public:
 
 	void InsertFlowToSchedule (RadioBearer* bearer,
 						       int dataToTransmit,
-						       std::vector<double> specEff,
 						       std::vector<int>& cqiFeedbacks,
-                   std::vector<CqiReport>& cqiWithMuteFeedbacks);
+                   std::vector<CqiReport>& cqiWithMuteFeedbacks,
+                   RSRPReport rsrp_report = RSRPReport());
 
 	void UpdateAllocatedBits (FlowToSchedule* scheduledFlow,
 						      int allocatedBits,

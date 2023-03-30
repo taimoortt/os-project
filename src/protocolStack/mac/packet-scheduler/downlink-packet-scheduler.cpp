@@ -114,20 +114,15 @@ void DownlinkPacketScheduler::SelectFlowsToSchedule ()
 		  ENodeB *enb = (ENodeB*) GetMacEntity ()->GetDevice ();
 		  ENodeB::UserEquipmentRecord *ueRecord = enb->GetUserEquipmentRecord(
         bearer->GetDestination ()->GetIDNetworkNode ());
-		  std::vector<double> spectralEfficiency;
       std::vector<int>& cqi_feedbacks = ueRecord->GetCQI();
       std::vector<CqiReport>& cqi_withmute_feedbacks = ueRecord->GetCQIWithMute();
-		  int numberOfCqi = cqi_feedbacks.size ();
-		  for (int i = 0; i < numberOfCqi; i++)
-			{
-			  double sEff = GetMacEntity()->GetAmcModule()->GetEfficiencyFromCQI(cqi_feedbacks.at (i));
-			  spectralEfficiency.push_back (sEff);
-			}
 
-      assert(cqi_withmute_feedbacks.size() > 0);
+      // assert(cqi_withmute_feedbacks.size() > 0);
 		  //create flow to scheduler record
 		  InsertFlowToSchedule(bearer, dataToTransmit,
-        spectralEfficiency, cqi_feedbacks, cqi_withmute_feedbacks);
+        cqi_feedbacks, cqi_withmute_feedbacks,
+        ueRecord->GetRSRP()
+        );
 		}
 	  else
 	    {}
@@ -402,7 +397,9 @@ DownlinkPacketScheduler::FinalizeScheduledFlows(void)
       for(auto it = allocated_rbs->begin(); it != allocated_rbs->end(); it++) {
         int rb_id = *it;
         double sinr = amc->GetSinrFromCQI(
-            flow->GetCqiWithMuteFeedbacks().at(rb_id).final_cqi);
+            // flow->GetCqiWithMuteFeedbacks().at(rb_id).final_cqi
+            flow->GetCqiFeedbacks().at(rb_id)
+          );
         sinr_values.push_back(sinr);
       }
       double effective_sinr = GetEesmEffectiveSinr(sinr_values);

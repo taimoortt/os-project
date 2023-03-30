@@ -72,8 +72,7 @@ NVSDownlinkScheduler::SelectFlowsToSchedule()
 			}
 
 		  //create flow to scheduler record
-		  InsertFlowToSchedule(bearer, dataToTransmit,
-        spectralEfficiency, cqi_feedbacks, cqi_withmute_feedbacks);
+		  InsertFlowToSchedule(bearer, dataToTransmit, cqi_feedbacks, cqi_withmute_feedbacks);
 		}
 	  else
 	    {}

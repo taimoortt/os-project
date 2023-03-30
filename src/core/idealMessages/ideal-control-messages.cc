@@ -187,6 +187,34 @@ CqiWithMuteIdealControlMessage::GetMessage (void)
   return m_cqiFeedbacks;
 }
 
+RSRPIdealControlMessage::RSRPIdealControlMessage(void)
+{
+  m_rsrp_feedback = new RSRPFeedback();
+  SetMessageType(IdealControlMessage::RSRP_FEEDBACKS);
+}
+
+RSRPIdealControlMessage::~RSRPIdealControlMessage(void)
+{
+  delete m_rsrp_feedback;
+}
+
+void
+RSRPIdealControlMessage::AddNewRecord(std::vector<double>& rx_power,
+    std::map<int, double>& rsrp_interference,
+    double device_noise, int serve_node)
+{
+  m_rsrp_feedback->m_rx_power = rx_power;
+  m_rsrp_feedback->m_rsrp_interference = rsrp_interference;
+  m_rsrp_feedback->device_noise = device_noise;
+  m_rsrp_feedback->serve_node = serve_node;
+}
+
+RSRPIdealControlMessage::RSRPFeedback*
+RSRPIdealControlMessage::GetMessage(void)
+{
+  return m_rsrp_feedback;
+}
+
 // ----------------------------------------------------------------------------------------------------------
 
 

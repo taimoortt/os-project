@@ -46,10 +46,13 @@ public:
 
     std::vector<int> m_cqiFeedback;
     std::vector<CqiReport> m_cqiWithMuteFeedback;
+		RSRPReport m_rsrp_report;
 		void SetCQI (std::vector<int> cqi);
 		std::vector<int>& GetCQI (void);
-    void SetCQIWithMute (std::vector<CqiReport> cqi);
-    std::vector<CqiReport>& GetCQIWithMute (void);
+    	void SetCQIWithMute (std::vector<CqiReport> cqi);
+    	std::vector<CqiReport>& GetCQIWithMute (void);
+		void SetRSRP(RSRPReport report);
+		RSRPReport& GetRSRP(void);
 
 		int m_schedulingRequest; // in bytes
 		void SetSchedulingRequest (int r);

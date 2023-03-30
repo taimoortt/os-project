@@ -266,6 +266,18 @@ ENodeB::UserEquipmentRecord::GetCQIWithMute (void)
  return m_cqiWithMuteFeedback;
 }
 
+void
+ENodeB::UserEquipmentRecord::SetRSRP(RSRPReport report)
+{
+  m_rsrp_report = report;
+}
+
+RSRPReport&
+ENodeB::UserEquipmentRecord::GetRSRP(void)
+{
+  return m_rsrp_report;
+}
+
 int
 ENodeB::UserEquipmentRecord::GetSchedulingRequest (void)
 {

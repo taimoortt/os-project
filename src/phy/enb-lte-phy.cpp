@@ -199,6 +199,11 @@ EnbLtePhy::ReceiveIdealControlMessage (IdealControlMessage *msg)
     EnbMacEntity* mac = (EnbMacEntity*) GetDevice()->GetProtocolStack()->GetMacEntity();
     mac->ReceiveCqiWithMuteIdealControlMessage (cqi_msg);
   }
+  else if (msg->GetMessageType() == IdealControlMessage::RSRP_FEEDBACKS) {
+    RSRPIdealControlMessage *rsrp_msg = (RSRPIdealControlMessage*)msg;
+    EnbMacEntity* mac = (EnbMacEntity*) GetDevice()->GetProtocolStack()->GetMacEntity();
+    mac->ReceiveRSRPIdealControlMessage(rsrp_msg);
+  }
 
   if (msg->GetMessageType () == IdealControlMessage::SCHEDULING_REQUEST) {
 	  SchedulingRequestIdealControlMessage *srMsg = (SchedulingRequestIdealControlMessage*) msg;

@@ -112,3 +112,25 @@ FullbandCqiManager::CreateCqiFeedbacks (std::vector<SinrReport> cqi_record)
 
   thisNode->GetPhy ()->SendIdealControlMessage (msg);
 }
+
+void
+FullbandCqiManager::CreateCqiFeedbacks (RSRPReport rsrp_record)
+{
+  UserEquipment* thisNode = (UserEquipment*) GetDevice ();
+  NetworkNode* targetNode = thisNode->GetTargetNode ();
+
+  AMCModule *amc = GetDevice ()->GetProtocolStack ()->GetMacEntity ()->GetAmcModule ();
+
+  RSRPIdealControlMessage *msg = new RSRPIdealControlMessage();
+  msg->SetSourceDevice (thisNode);
+  msg->SetDestinationDevice (targetNode);
+
+  msg->AddNewRecord(rsrp_record.rx_power,
+    rsrp_record.rsrp_interference,
+    rsrp_record.device_noise,
+    rsrp_record.serve_node);
+
+  SetLastSent ();
+
+  thisNode->GetPhy ()->SendIdealControlMessage (msg);
+}

@@ -30,7 +30,8 @@ public:
 	virtual ~FullbandCqiManager();
 
 	virtual void CreateCqiFeedbacks (std::vector<double> sinr);
-  virtual void CreateCqiFeedbacks (std::vector<SinrReport> cqi_record);
+  	virtual void CreateCqiFeedbacks (std::vector<SinrReport> cqi_record);
+	virtual void CreateCqiFeedbacks (RSRPReport rsrp_record);
 
 };
 

@@ -34,6 +34,7 @@
 class PacketScheduler;
 class CqiIdealControlMessage;
 class CqiWithMuteIdealControlMessage;
+class RSRPIdealControlMessage;
 class PdcchMapIdealControlMessage;
 class SchedulingRequestIdealControlMessage;
 
@@ -67,6 +68,7 @@ public:
 
   void ReceiveCqiIdealControlMessage  (CqiIdealControlMessage* msg);
   void ReceiveCqiWithMuteIdealControlMessage (CqiWithMuteIdealControlMessage* msg);
+  void ReceiveRSRPIdealControlMessage (RSRPIdealControlMessage* msg);
   void SendPdcchMapIdealControlMessage  (PdcchMapIdealControlMessage* msg);
   void ReceiveSchedulingRequestIdealControlMessage (SchedulingRequestIdealControlMessage *msg);
 private:
