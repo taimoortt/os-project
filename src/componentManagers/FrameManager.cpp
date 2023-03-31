@@ -733,99 +733,119 @@ FrameManager::RadioSaberAllocateOneRBSecondMute(
     std::vector<DownlinkPacketScheduler*>& schedulers,
     int rb_id) {
   AMCModule* amc = schedulers[0]->GetMacEntity()->GetAmcModule();
-  bool enable_comp = schedulers[0]->enable_comp_;
-  int final_mute_id = schedulers.size();
-  // if not enable_comp, start from schedulers.size() which means no muting
-  // if enable_comp, start from every possible muting cell
-  int mute_id = enable_comp ? 0 : final_mute_id;  
-  std::vector<std::vector<FlowToSchedule*>> cell_flows_with_mute(schedulers.size());
-  int max_sum_tbs = 0;
-  std::vector<int> tbs_with_mute;
-  for (; mute_id <= schedulers.size(); mute_id++) {
-    int sum_tbs = 0;
-    for (int j = 0; j < schedulers.size(); j++) {
-      RadioSaberDownlinkScheduler* scheduler =
-        (RadioSaberDownlinkScheduler*)schedulers[j];
-      // skip the muted cell
-      if (j == mute_id) {
-        cell_flows_with_mute[j].push_back(nullptr);
+  std::unordered_set<int> global_cells_muted;
+  int global_sum_tbs = 0;
+  std::vector<FlowToSchedule*> global_cell_flow;
+  const int index_no_mute = schedulers.size();
+  std::cout << "muting iteration for rb: " << rb_id << std::endl;
+  while (true) {
+    int final_mute_id = -1;
+    int max_sum_tbs = 0;
+    std::vector<FlowToSchedule*> max_cell_flow;
+    // if not enable_comp, start from schedulers.size() which means no muting
+    // if enable_comp, start from every possible muting cell
+    int mute_id = schedulers[0]->enable_comp_ ? 0 : index_no_mute;
+    for (; mute_id <= schedulers.size(); mute_id++) {
+      // already muted
+      if (global_cells_muted.count(mute_id)) {
         continue;
       }
-      FlowsToSchedule* flows = scheduler->GetFlowsToSchedule();
-      int num_slice = scheduler->slice_ctx_.num_slices_;
-      // enterprise scheduling for every slice
-      std::vector<FlowToSchedule*> slice_flow(num_slice, nullptr);
-      std::vector<double> slice_spectraleff(num_slice, -1);
-      std::vector<int> max_metrics(num_slice, -1);
-      for (auto it = flows->begin(); it != flows->end(); it++) {
-        FlowToSchedule* flow = *it;
-        auto& rsrp_report = flow->GetRSRPReport();
-        // under the current muting assumption
-        double spectraleff_rbg = 0.0;
-        for (int i = rb_id; i < RBG_SIZE+rb_id; i++) {
-          double in_under_mute = rsrp_report.noise_interfere_watt[i];
-          if (mute_id != schedulers.size()) {
-            in_under_mute -= pow(10., rsrp_report.rsrp_interference[mute_id]/10.);
+      int sum_tbs = 0;
+      std::vector<FlowToSchedule*> cell_flow(schedulers.size(), nullptr);
+      for (int j = 0; j < schedulers.size(); j++) {
+        RadioSaberDownlinkScheduler* scheduler =
+          (RadioSaberDownlinkScheduler*)schedulers[j];
+        // skip the muted cell
+        if (j == mute_id || global_cells_muted.count(j)) {
+          continue;
+        }
+        FlowsToSchedule* flows = scheduler->GetFlowsToSchedule();
+        int num_slice = scheduler->slice_ctx_.num_slices_;
+        // enterprise scheduling for every slice
+        std::vector<FlowToSchedule*> slice_flow(num_slice, nullptr);
+        std::vector<double> slice_spectraleff(num_slice, -1);
+        std::vector<int> max_metrics(num_slice, -1);
+        for (auto it = flows->begin(); it != flows->end(); it++) {
+          FlowToSchedule* flow = *it;
+          auto& rsrp_report = flow->GetRSRPReport();
+          // under the current muting assumption
+          double spectraleff_rbg = 0.0;
+          for (int i = rb_id; i < RBG_SIZE+rb_id; i++) {
+            double in_under_mute = rsrp_report.noise_interfere_watt[i];
+            if (mute_id != index_no_mute) {
+              in_under_mute -= pow(10., rsrp_report.rsrp_interference[mute_id]/10.);
+            }
+            int cqi_under_mute = amc->GetCQIFromSinr(
+                rsrp_report.rx_power[i] - 10. * log10(in_under_mute));
+            spectraleff_rbg += amc->GetEfficiencyFromCQI(cqi_under_mute);
           }
-          int cqi_under_mute = amc->GetCQIFromSinr(
-            rsrp_report.rx_power[i] - 10. * log10(in_under_mute));
-          spectraleff_rbg += amc->GetEfficiencyFromCQI(cqi_under_mute);
+          double metric = scheduler->ComputeSchedulingMetric(
+              flow->GetBearer(), spectraleff_rbg, rb_id);
+          int slice_id = flow->GetSliceID();
+          // enterprise schedulers
+          if (metric > max_metrics[slice_id]) {
+            max_metrics[slice_id] = metric;
+            slice_flow[slice_id] = flow;
+            slice_spectraleff[slice_id] = spectraleff_rbg;
+          }
         }
-        double metric = scheduler->ComputeSchedulingMetric(
-          flow->GetBearer(), spectraleff_rbg, rb_id);
-        int slice_id = flow->GetSliceID();
-        // enterprise schedulers
-        if (metric > max_metrics[slice_id]) {
-          max_metrics[slice_id] = metric;
-          slice_flow[slice_id] = flow;
-          slice_spectraleff[slice_id] = spectraleff_rbg;
+        double max_slice_spectraleff = -1;
+        FlowToSchedule* selected_flow = nullptr;
+        for (int i = 0; i < num_slice; i++) {
+          if (slice_spectraleff[i] > max_slice_spectraleff
+              && scheduler->slice_rbgs_quota_[i] > 0) {
+            max_slice_spectraleff = slice_spectraleff[i];
+            selected_flow = slice_flow[i];
+          }
+        }
+        if (selected_flow) {
+          cell_flow[j] = selected_flow;
+          sum_tbs += max_slice_spectraleff;
         }
       }
-      double max_slice_spectraleff = -1;
-      FlowToSchedule* selected_flow = nullptr;
-      for (int i = 0; i < num_slice; i++) {
-        if (slice_spectraleff[i] > max_slice_spectraleff
-          && scheduler->slice_rbgs_quota_[i] > 0) {
-          max_slice_spectraleff = slice_spectraleff[i];
-          selected_flow = slice_flow[i];
-        }
-      }
-      if (selected_flow) {
-        cell_flows_with_mute[j].push_back(selected_flow);
-        sum_tbs += max_slice_spectraleff;
+      if (sum_tbs > max_sum_tbs) {
+        max_sum_tbs = sum_tbs;
+        final_mute_id = mute_id;
+        max_cell_flow = cell_flow;
       }
     }
-    tbs_with_mute.push_back(sum_tbs);
-    if (sum_tbs > max_sum_tbs) {
-      max_sum_tbs = sum_tbs;
-      final_mute_id = mute_id;
+    if (final_mute_id == index_no_mute) {
+      global_sum_tbs = max_sum_tbs;
+      global_cell_flow = max_cell_flow;
+      std::cout << "( null, " << global_sum_tbs << ") " << std::endl;
+      // terminate the loop since no more benefit by muting a cell
+      break;
+    }
+    else {
+      global_sum_tbs = max_sum_tbs;
+      global_cells_muted.insert(final_mute_id);
+      std::cout << "(" << final_mute_id << ", " << global_sum_tbs << ") ";
+      global_cell_flow = max_cell_flow;
+      // update all flows of cell j
+      for (int j = 0; j < schedulers.size(); j++) {
+        if (j != final_mute_id) {
+          FlowsToSchedule* flows = schedulers[j]->GetFlowsToSchedule();
+          for (auto it = flows->begin(); it != flows->end(); it++) {
+            auto& rsrp_report = (*it)->GetRSRPReport();
+            for (int i = rb_id; i < RBG_SIZE+rb_id; i++) {
+              rsrp_report.noise_interfere_watt[i] -= pow(10., rsrp_report.rsrp_interference[final_mute_id]/10.);
+            }
+          }
+        }
+      }
     }
   }
-  std::cout << "RB: " << rb_id << " tbs with mutes: ";
-  for (int i = 0; i < tbs_with_mute.size(); i++) {
-    std::cout << tbs_with_mute[i] << ", ";
-  }
-  std::cout << std::endl;
   for (int j = 0; j < schedulers.size(); j++) {
-    if (j == final_mute_id) {
+    if (global_cells_muted.count(j)) {
       continue;
     }
     RadioSaberDownlinkScheduler* scheduler =
       (RadioSaberDownlinkScheduler*)schedulers[j];
-    FlowToSchedule* flow;
-    if (enable_comp) {
-      flow = cell_flows_with_mute[j][final_mute_id];
-    }
-    else {
-      flow = cell_flows_with_mute[j][0];
-    }
+    FlowToSchedule* flow = global_cell_flow[j];
     auto& rsrp_report = flow->GetRSRPReport();
     // under the current muting assumption
     for (int i = rb_id; i < RBG_SIZE+rb_id; i++) {
       double in_under_mute = rsrp_report.noise_interfere_watt[i];
-      if (final_mute_id != schedulers.size()) {
-        in_under_mute -= pow(10., rsrp_report.rsrp_interference[final_mute_id]/10.);
-      }
       int cqi_under_mute = amc->GetCQIFromSinr(
         rsrp_report.rx_power[i] - 10. * log10(in_under_mute));
       flow->GetCqiFeedbacks()[i] = cqi_under_mute;
