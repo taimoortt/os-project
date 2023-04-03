@@ -412,7 +412,6 @@ FrameManager::CentralDownlinkRBsAllocation(void)
 
   int scheme = 1;
   assert(scheme == 1);
-  // NVS allocation
   if (scheme == 0) {
     for (int rb_id = 0; rb_id < nb_of_rbs; rb_id++) {
       NVSAllocateOneRB(schedulers, rb_id);
@@ -425,8 +424,8 @@ FrameManager::CentralDownlinkRBsAllocation(void)
     }
     int rb_id = 0;
     while (rb_id < nb_of_rbs) { // Allocate in the form of PRBG of size 4
-      // RadioSaberAllocateOneRB(schedulers, rb_id);
-      RadioSaberAllocateOneRBSecondMute(schedulers, rb_id);
+      RadioSaberAllocateOneRB(schedulers, rb_id);
+      // RadioSaberAllocateOneRBSecondMute(schedulers, rb_id);
       rb_id += RBG_SIZE;
     }
   }
@@ -958,6 +957,7 @@ void
 FrameManager::RadioSaberAllocateOneRB(
     std::vector<DownlinkPacketScheduler*>& schedulers,
     int rb_id) {
+  AMCModule* amc = schedulers[0]->GetMacEntity()->GetAmcModule();
   std::vector<FlowToSchedule*> cell_flows(schedulers.size(), nullptr);
   std::vector<std::pair<int, int>> cell_spectraleff(schedulers.size(), {0,0});
   for (int j = 0; j < schedulers.size(); j++) {
@@ -974,9 +974,12 @@ FrameManager::RadioSaberAllocateOneRB(
       // Get Spectral Efficiency of the RBG
       double spectraleff_rbg = 0.0;
       for (int i = 0; i < RBG_SIZE; i++) {
-        spectraleff_rbg += flow->GetSpectralEfficiency().at(rb_id+i);
+        int cqi = flow->GetCqiWithMuteFeedbacks().at(rb_id+i).cqi;
+        flow->GetCqiFeedbacks().at(rb_id+i) = cqi;
+        spectraleff_rbg += amc->GetEfficiencyFromCQI(cqi);
       }
-      double metric = scheduler->ComputeSchedulingMetric(flow->GetBearer(), spectraleff_rbg, rb_id);
+      double metric = scheduler->ComputeSchedulingMetric(
+        flow->GetBearer(), spectraleff_rbg, rb_id);
       int slice_id = flow->GetSliceID();
       // enterprise schedulers
       if (metric > max_metrics[slice_id]) {
@@ -1066,7 +1069,7 @@ FrameManager::FinalizeAllocation(
       if (cells_muted.find(cell_one) != cells_muted.end()) {
         for (int i = 0; i < RBG_SIZE; i++) {
           CqiReport& cqi_report = flow->GetCqiWithMuteFeedbacks().at(rb_id + i);
-          cqi_report.final_cqi = cqi_report.cqi_mute_one;
+          flow->GetCqiFeedbacks()[rb_id+i] = cqi_report.cqi_mute_one;
         }
       }
       else if (tbs_with_mute > 1.5 * (tbs_neighbor + tbs)) {
@@ -1081,7 +1084,7 @@ FrameManager::FinalizeAllocation(
         cells_muted.insert(cell_one);
         for (int i = 0; i < RBG_SIZE; i++) {
           CqiReport& cqi_report = flow->GetCqiWithMuteFeedbacks().at(rb_id + i);
-          cqi_report.final_cqi = cqi_report.cqi_mute_one;
+          flow->GetCqiFeedbacks()[rb_id+i] = cqi_report.cqi_mute_one;
         }
         if ((typeid(schedulers[cell_id]).name()) == "RadioSaberDownlinkScheduler") {
           RadioSaberDownlinkScheduler* neighbor = (RadioSaberDownlinkScheduler*)schedulers[cell_one];

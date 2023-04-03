@@ -126,16 +126,13 @@ UeLtePhy::StartRx (PacketBurst* p, TransmittedSignal* txSignal)
 #endif
 
   m_measuredSinr.clear();
-  // std::vector<SinrReport> sinr_report;
-
   //COMPUTE THE SINR
   std::vector<double> rxSignalValues;
-  std::vector<double>::iterator it;
 
   rxSignalValues = txSignal->Getvalues();
 
   //compute noise + interference
-  std::map<int, double> rsrp;
+  std::map<int, double> rsrp_interference;
   double tot_interference_watt = 0;
   double cell_one_rsrp = -std::numeric_limits<double>::infinity();
   double cell_two_rsrp = -std::numeric_limits<double>::infinity();
@@ -143,10 +140,10 @@ UeLtePhy::StartRx (PacketBurst* p, TransmittedSignal* txSignal)
   int cell_two = -1;
   UserEquipment* ue = (UserEquipment*)GetDevice();
   if (GetInterference () != NULL) {
-    rsrp = GetInterference ()->ComputeInterference (ue);
+    rsrp_interference = GetInterference ()->ComputeInterference (ue);
   }
 
-  for (auto it = rsrp.begin(); it != rsrp.end(); ++it) {
+  for (auto it = rsrp_interference.begin(); it != rsrp_interference.end(); ++it) {
     // exclude the serving cell
     if (it->first != ue->GetTargetNode()->GetIDNetworkNode()) {
       tot_interference_watt += it->second;
@@ -158,7 +155,7 @@ UeLtePhy::StartRx (PacketBurst* p, TransmittedSignal* txSignal)
         cell_one = it->first;
       }
     }
-    rsrp[it->first] = 10. * log10(it->second);
+    rsrp_interference[it->first] = 10. * log10(it->second);
   }
 
   double noise_interference = 10. * log10 (pow(10., NOISE/10) + tot_interference_watt); // dB
@@ -168,9 +165,6 @@ UeLtePhy::StartRx (PacketBurst* p, TransmittedSignal* txSignal)
   double noise_interference_mute_two = 10. * log10(
       pow(10., NOISE/10) + tot_interference_watt - 
       pow(10., cell_two_rsrp/10));
-  double avg_rsrp = 0;
-  double avg_sinr = 0;
-
   // report SinrReport in RBG instead of RB
   assert(rxSignalValues.size() % RBG_SIZE == 0);
   for (int rb_id = 0; rb_id < rxSignalValues.size();) {
@@ -182,7 +176,10 @@ UeLtePhy::StartRx (PacketBurst* p, TransmittedSignal* txSignal)
     }
     rb_id += RBG_SIZE;
   }
-  for (it = rxSignalValues.begin(); it != rxSignalValues.end(); it++) {
+  double avg_rsrp = 0;
+  double avg_sinr = 0;
+  std::vector<SinrReport> sinr_report;
+  for (auto it = rxSignalValues.begin(); it != rxSignalValues.end(); it++) {
     double power; // power transmission for the current sub channel [dB]
     if ((*it) != 0.) {
       power = (*it);
@@ -194,16 +191,16 @@ UeLtePhy::StartRx (PacketBurst* p, TransmittedSignal* txSignal)
     avg_rsrp += power;
     avg_sinr += (power - noise_interference);
     // cqi report with muting information
-    // sinr_report.emplace_back(
-    //   power - noise_interference,
-    //   power - noise_interference_mute_one,
-    //   power - noise_interference_mute_two,
-    //   0,
-    //   cell_one,
-    //   cell_two
-    // );
+    sinr_report.emplace_back(
+      power - noise_interference,
+      power - noise_interference_mute_one,
+      power - noise_interference_mute_two,
+      0,
+      cell_one,
+      cell_two
+    );
   }
-  RSRPReport rsrp_report(rxSignalValues, rsrp,
+  RSRPReport rsrp_report(rxSignalValues, rsrp_interference,
     NOISE, ue->GetTargetNode()->GetIDNetworkNode());
   avg_rsrp /= rxSignalValues.size();
   avg_sinr /= rxSignalValues.size();
@@ -270,7 +267,7 @@ UeLtePhy::StartRx (PacketBurst* p, TransmittedSignal* txSignal)
 
   //CQI report
   // CreateCqiFeedbacks (m_measuredSinr);
-  // CreateCqiFeedbacks(sinr_report);
+  CreateCqiFeedbacks(sinr_report);
   CreateCqiFeedbacks(rsrp_report);
 
   m_channelsForRx.clear ();

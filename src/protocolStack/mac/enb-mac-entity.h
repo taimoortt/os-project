@@ -44,13 +44,12 @@ struct CqiReport {
   int cqi_mute_two;
   int cell_one;
   int cell_two;
-  int final_cqi;        // finalized after the enb mutes and allocate rbs, initialized as cqi
 
   CqiReport(int _cqi, int _cqi_mute_one, int _cqi_mute_two,
     int _cell_one, int _cell_two)
   : cqi(_cqi), cqi_mute_one(_cqi_mute_one),
     cqi_mute_two(_cqi_mute_two), cell_one(_cell_one),
-    cell_two(_cell_two), final_cqi(_cqi){}
+    cell_two(_cell_two) {}
 };
 
 class EnbMacEntity : public MacEntity
