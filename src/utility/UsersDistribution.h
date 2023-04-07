@@ -61,23 +61,23 @@ GetUniformUsersDistribution (int idCell, int nbUE)
   CartesianCoordinates *cellCoordinates = cell->GetCellCenterPosition();
   double r; double angle;
 
-  // for (int i = 0; i < nbUE; i++)
-  // {
-  //   // r = (double) (rand() % (int)(cell->GetRadius()*1000) * 2.732);
-  //   r = (double) (rand() % (int)(cell->GetRadius()*1000) * 4);
-  //   angle = (double)(rand() %360) * ((2*3.14)/360);
-  //   CartesianCoordinates *newCoordinates = GetCartesianCoordinatesFromPolar (r, angle);
-  //   //Compute absoluteCoordinates
-  //   vectorOfCoordinates->push_back(newCoordinates);
-  // }
-
   for (int i = 0; i < nbUE; i++)
   {
-    double random_num = (double)(rand() % 60);
-    CartesianCoordinates *newCoordinates = new CartesianCoordinates(
-      midpoint_x + random_num, midpoint_y + random_num);
-	  vectorOfCoordinates->push_back(newCoordinates);
+    // r = (double) (rand() % (int)(cell->GetRadius()*1000) * 2.732);
+    r = (double) (rand() % (int)(cell->GetRadius()*1000) * 2);
+    angle = (double)(rand() %360) * ((2*3.14)/360);
+    CartesianCoordinates *newCoordinates = GetCartesianCoordinatesFromPolar (r, angle);
+    //Compute absoluteCoordinates
+    vectorOfCoordinates->push_back(newCoordinates);
   }
+
+  // for (int i = 0; i < nbUE; i++)
+  // {
+  //   double random_num = (double)(rand() % 60);
+  //   CartesianCoordinates *newCoordinates = new CartesianCoordinates(
+  //     midpoint_x + random_num, midpoint_y + random_num);
+	//   vectorOfCoordinates->push_back(newCoordinates);
+  // }
 
   return vectorOfCoordinates;
 }

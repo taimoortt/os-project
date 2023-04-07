@@ -80,6 +80,41 @@ GetMaxDistanceFromCenter (int nbCell, double radius)
 }
 
 static CartesianCoordinates
+GetCartesianCoordinatesHex(int idCell, double radius)
+{
+	double x, y;
+  switch(idCell) {
+    case 0:
+      x = 0;
+      y = radius;
+      break;
+    case 1:
+      x = -sqrt(3)/2 * radius;
+      y = radius / 2;
+      break;
+    case 2:
+      x = -sqrt(3)/2 * radius;
+      y = -radius / 2;
+      break;
+    case 3:
+      x = 0;
+      y = -radius;
+      break;
+    case 4:
+      x = sqrt(3)/2 * radius;
+      y = -radius / 2;
+      break;
+    case 5:
+      x = sqrt(3)/2 * radius;
+      y = radius / 2;
+      break;
+  }
+  CartesianCoordinates coordinates;
+  coordinates.SetCoordinates(x,y);
+  return coordinates;
+}
+
+static CartesianCoordinates
 GetCartesianCoordinatesForCell (int idCell, double radius)
 {
   double x;
