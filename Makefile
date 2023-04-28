@@ -7,7 +7,6 @@ make:
 	./CONFIG/make_load-parameter-file.sh; 
 	cd Debug; make clean; make; cd ..;
 	ln -s Debug/LTE-Sim LTE-Sim 
-	clear;
 	cat CONFIG/LTE-Sim-end
 clean:
 	rm LTE-Sim; cd Debug; make clean
