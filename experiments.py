@@ -1,24 +1,18 @@
 import os
-# os.system("make clean")
-# os.system("make")
-file = open("stat_file.txt", 'a+')
-file.write("\nMuting with Cell Edge Distribution\n")
-file.close()
+# os.system("sudo make clean && sudo make -j8")
 
-for i in range(1,10):
-    os.system("sudo ./LTE-Sim MultiCell 7 1 10 0 0 1 0 8 1 30 0.1 128 scripts/baseline5.json >res.txt")
-    os.system("python3 analyze.py")
-    # os.system("sudo mv cell_placement.png cell_placement_cell_edge_muting_" + str(i) + ".png")
-    # os.system("sudo mv bar_plot_eff_sinr.png bar_plot_eff_sinr_cell_edge_muting_" + str(i) + ".png")
-    # os.system("sudo mv cdf_eff_sinr.png cdf_eff_sinr_cell_edge_muting_" + str(i) + ".png")
+for i in range(0,1):
+    cmd = f"sudo ./LTE-Sim MultiCell 7 1 10 0 0 1 0 8 1 3 0.1 128 scripts/1slicepf_logs/ue140_b1.json 7 0 {i} > no_fading_multicell_pf{i}.log"
+    os.system(cmd)
 
-file = open("stat_file.txt", 'a+')
-file.write("\n\n\nNo Muting with Cell Edge Distribution\n")
-file.close()
+    cmd = f"sudo ./LTE-Sim MultiCell 7 1 10 0 0 1 0 8 1 3 0.1 128 scripts/1slicepf_logs/ue140_b1.json 1 6 {i} > multicell_macro_micro_pf_no_muting_{i}.log"
+    os.system(cmd)
 
-for i in range(1,10):
-    os.system("sudo ./LTE-Sim MultiCell 7 1 10 0 0 1 0 8 1 30 0.1 128 scripts/baseline1.json >res.txt")
-    os.system("python3 analyze.py")
-    # os.system("sudo mv cell_placement.png cell_placement_cell_edge_no_muting_" + str(i) + ".png")
-    # os.system("sudo mv bar_plot_eff_sinr.png bar_plot_eff_sinr_cell_edge_no_muting_" + str(i) + ".png")
-    # os.system("sudo mv cdf_eff_sinr.png cdf_eff_sinr_cell_edge_no_muting_" + str(i) + ".png")
+    cmd = f"sudo ./LTE-Sim MultiCell 7 1 10 0 0 1 0 8 1 3 0.1 128 scripts/1slicemax_logs/ue140_b1.json 1 6 {i} > multicell_macro_micro_max_no_muting_{i}.log"
+    os.system(cmd)
+
+    cmd = f"sudo ./LTE-Sim MultiCell 7 1 10 0 0 1 0 8 1 3 0.1 128 scripts/1slicepf_logs/ue140_b5.json 1 6 {i} > multicell_shared_pf_muting_{i}.log"
+    os.system(cmd)
+
+    cmd = f"sudo ./LTE-Sim MultiCell 7 1 10 0 0 1 0 8 1 3 0.1 128 scripts/1slicemax_logs/ue140_b5.json 1 6 {i} > multicell_shared_max_muting_{i}.log"
+    os.system(cmd)
