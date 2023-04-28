@@ -61,6 +61,29 @@ GetUniformUsersDistribution (int idCell, int nbUE)
   CartesianCoordinates *cellCoordinates = cell->GetCellCenterPosition();
   double r; double angle;
 
+// Generate Users Uniformly around a Cell
+  // if (idCell == 0){ r = 2000;}
+  // else{ r = 400;}
+  // cout << "Radius of Cell " << idCell << "\t" << r << endl;
+  // for (int i = 0; i < nbUE; i++){
+  //   CartesianCoordinates *newCoordinates;
+  //   double random_num_x = static_cast<double>(rand() % r + round(r/10));
+  //   double random_num_y = static_cast<double>(rand() % r + round(r/10));
+  //   cout << "Generating Position: " << random_num_x << "\t" << random_num_y << endl;
+    
+  //   if(i%3 == 0){
+  //     newCoordinates = new CartesianCoordinates(cell_x + random_num_x, cell_y + random_num_y);
+  //   } else if (i%5 == 0){
+  //     newCoordinates = new CartesianCoordinates(cell_x - random_num_x, cell_y + random_num_y);
+  //   } else if (i%7 == 0){
+  //     newCoordinates = new CartesianCoordinates(cell_x + random_num_x, cell_y - random_num_y);
+  //   } else{
+  //     newCoordinates = new CartesianCoordinates(cell_x - random_num_x, cell_y - random_num_y);
+  //   }
+  //   vectorOfCoordinates->push_back(newCoordinates);
+  // }
+  // return vectorOfCoordinates;
+
   for (int i = 0; i < nbUE; i++)
   {
     // r = (double) (rand() % (int)(cell->GetRadius()*1000) * 2.732);
