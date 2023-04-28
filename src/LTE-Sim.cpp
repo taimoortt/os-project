@@ -149,10 +149,12 @@ main (int argc, char *argv[])
 	      double maxDelay = atof(argv[12]);
 		    int video_bit_rate = atoi(argv[13]);
         std::string config_fname = std::string(argv[14]);
+		int num_macro = atoi(argv[15]);
+		int num_micro = atoi(argv[16]);
 	      int seed = -1;
-	      if (argc==16)
-          seed = atoi(argv[15]);
-	      MultiCell (nbCells, radius, nbUE, nbVoIP, nbVideo, nbBE, nbCBR, sched_type, frame_struct, speed, maxDelay, video_bit_rate, config_fname, seed);
+	      if (argc==18)
+          seed = atoi(argv[17]);
+	      MultiCell (nbCells, radius, nbUE, nbVoIP, nbVideo, nbBE, nbCBR, sched_type, frame_struct, speed, maxDelay, video_bit_rate, config_fname, num_macro, num_micro, seed);
 	    }
 
 	  if (strcmp(argv[1], "SingleCellWithFemto")==0)

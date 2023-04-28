@@ -59,7 +59,7 @@ static void MultiCell (int nbCell, double radius,
                        int frame_struct,
                        int speed,
 		                   double maxDelay, int videoBitRate,
-                       std::string config_fname,
+                       std::string config_fname,int macro, int micro,
                        int seed)
 {
   // define simulation times
