@@ -25,6 +25,7 @@
 #include "../load-parameters.h"
 #include "../device/ENodeB.h"
 #include "../device/HeNodeB.h"
+#include "../device/UserEquipment.h"
 #include "../protocolStack/mac/packet-scheduler/downlink-packet-scheduler.h"
 #include "../protocolStack/mac/AMCModule.h"
 #include "../core/spectrum/bandwidth-manager.h"
@@ -174,8 +175,36 @@ FrameManager::StartSubframe (void)
 {
 #ifdef FRAME_MANAGER_DEBUG
   std::cout << " --------- Start SubFrame, time =  "
-      << Simulator::Init()->Now() << " --------- " << std::endl;
+      << Simulator::Init()->Now() << " --------- " << "TTI: " << GetTTICounter() << std::endl;
 #endif
+
+  if(GetTTICounter() == 150){
+    std::vector<ENodeB*> *enodebs = GetNetworkManager ()->GetENodeBContainer ();
+    cout << "ENB Size: " << enodebs->size() << endl;
+    for (auto iter = enodebs->begin (); iter != enodebs->end (); iter++) {
+  	  ENodeB* enb = *iter;
+      ENodeB::UserEquipmentRecords* ue_records = enb->GetUserEquipmentRecords();
+      cout << "UE Records Size: " << ue_records->size() << endl;
+      for (int i = 0; i < ue_records->size(); i++){
+          UserEquipment* x = (*ue_records)[i]->GetUE();
+          cout << GetTTICounter();
+          x->Print();
+      }
+    }
+  }
+
+  if(GetTTICounter() == 2990){
+    std::vector<ENodeB*> *enodebs = GetNetworkManager ()->GetENodeBContainer ();
+    for (auto iter = enodebs->begin (); iter != enodebs->end (); iter++) {
+  	  ENodeB* enb = *iter;
+      ENodeB::UserEquipmentRecords* ue_records = enb->GetUserEquipmentRecords();
+      for (int i = 0; i < ue_records->size(); i++){
+          UserEquipment* x = (*ue_records)[i]->GetUE();
+          cout << GetTTICounter();
+          x->Print();
+      }
+    }
+  }
 
   UpdateTTIcounter ();
   UpdateNbSubframes ();

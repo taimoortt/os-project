@@ -264,12 +264,11 @@ UserEquipment::IsIndoor (void)
 void
 UserEquipment::Print (void)
 {
-  std::cout << " UserEquipment object:"
-      "\n\t m_idNetworkNode = " << GetIDNetworkNode () <<
-	  "\n\t idCell = " << GetCell ()->GetIdCell () <<
-	  "\n\t idtargetNode = " << GetTargetNode ()->GetIDNetworkNode () <<
-	  "\n\t m_AbsolutePosition_X = " <<  GetMobilityModel ()->GetAbsolutePosition()->GetCoordinateX()<<
-	  "\n\t m_AbsolutePosition_Y = " << GetMobilityModel ()->GetAbsolutePosition()->GetCoordinateY()<<
+  std::cout <<" m_idNetworkNode = " << GetIDNetworkNode () <<
+	  " idCell = " << GetCell ()->GetIdCell () <<
+	  " idtargetNode = " << GetTargetNode ()->GetIDNetworkNode () <<
+	  " m_AbsolutePosition_X = " <<  GetMobilityModel ()->GetAbsolutePosition()->GetCoordinateX()<<
+	  " m_AbsolutePosition_Y = " << GetMobilityModel ()->GetAbsolutePosition()->GetCoordinateY()<<
       "\n\t m_speed = " << GetMobilityModel ()->GetSpeed () <<
       "\n\t m_speedDirection = " << GetMobilityModel ()->GetSpeedDirection () <<
       std::endl;
