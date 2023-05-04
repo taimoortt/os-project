@@ -36,19 +36,19 @@ def plot_geo_loc(dname):
         plt.yticks(range(min(ues_zipped[2]), 100, max(ues_zipped[2])))
 
         markers = ['x', 'o', 'd', 'p', 'h', 'v', 'o']
-        colors = ['red', 'blue', 'green', 'orange', 'magenta', 'maroon', 'turquoise']
+        colors = ['red', 'blue', 'green', 'orange', 'magenta', 'maroon', 'turquoise', 'darkgreen', 'tan', 'darksalmon', 'purple', 'ivory', 'yellowgreen', 'slategray']
 
         for i,j,k in zip(ues_zipped[1],ues_zipped[2],ues_zipped[3]):
-            plt.scatter(i, j, marker=markers[k], color = colors[k])
+            plt.scatter(i, j, marker=markers[k%7], color = colors[k%7])
 
         for i,j,k in zip(cells_zipped[1],cells_zipped[2],cells_zipped[0]):
-            plt.scatter(i, j, marker=markers[k], color = colors[k])
-            circle1 = plt.Circle((i,j), RADIUS, facecolor='none', edgecolor=colors[k])
+            plt.scatter(i, j, marker=markers[k%7], color = colors[k%7])
+            circle1 = plt.Circle((i,j), RADIUS, facecolor='none', edgecolor=colors[k%7])
             plt.gca().add_patch(circle1)
 
         for i,j,k in zip(micro_zipped[1],micro_zipped[2],micro_zipped[0]):
-            plt.scatter(i, j, marker=markers[k], color = colors[k])
-            circle1 = plt.Circle((i,j), RADIUS/4, facecolor='none', edgecolor=colors[k])
+            plt.scatter(i, j, marker=markers[k%7], color = colors[k%7])
+            circle1 = plt.Circle((i,j), RADIUS/4, facecolor='none', edgecolor=colors[k%7])
             plt.gca().add_patch(circle1)
 
         plt.savefig(dname + "initial.png")
@@ -138,4 +138,4 @@ def plot_geo_loc_start_end(dname):
 
 
 plot_geo_loc("ue_test_")
-plot_geo_loc_start_end("ue_test_")
+# plot_geo_loc_start_end("ue_test_")
