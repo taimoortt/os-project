@@ -60,6 +60,7 @@ static void MultiCell (int nbCell, double radius,
                        int speed,
 		                   double maxDelay, int videoBitRate,
                        std::string config_fname,
+                       int num_macro, int num_micro,
                        int seed)
 {
   // define simulation times
@@ -145,17 +146,33 @@ static void MultiCell (int nbCell, double radius,
 
 
   //create cells
+  assert(num_macro + num_micro == nbCell);
   std::vector <Cell*> *cells = new std::vector <Cell*>;
-  for (int i = 0; i < nbCell; i++)
+  int i = 0;
+  for (; i < num_macro; i++)
   {
     CartesianCoordinates center =
-      GetCartesianCoordinatesForCell(i, radius *1000.);
+      GetCartesianCoordinatesForCell(i, radius * 1000.0); //Multiply with 1000 to convert to metres
 
     Cell *c = new Cell (i, radius, 0.035, center.GetCoordinateX (), center.GetCoordinateY ());
     cells->push_back (c);
     nm->GetCellContainer ()->push_back (c);
 
     std::cout << "Created Cell, id " << c->GetIdCell ()
+      <<", position: " << c->GetCellCenterPosition ()->GetCoordinateX ()
+      << " " << c->GetCellCenterPosition ()->GetCoordinateY () << std::endl;
+  }
+
+  for (; i < num_micro + num_macro; i++)
+  {
+    CartesianCoordinates center =
+      GetCartesianCoordinatesForCell(i, (radius/4) * 1000.0); //Multiply with 1000 to convert to metres
+
+    Cell *c = new Cell (i, radius/4, 0.035, center.GetCoordinateX (), center.GetCoordinateY ());
+    cells->push_back (c);
+    nm->GetCellContainer ()->push_back (c);
+
+    std::cout << "Created Micro, id " << c->GetIdCell ()
       <<", position: " << c->GetCellCenterPosition ()->GetCoordinateX ()
       << " " << c->GetCellCenterPosition ()->GetCoordinateY () << std::endl;
   }
@@ -178,7 +195,8 @@ static void MultiCell (int nbCell, double radius,
 
   //create eNBs
   std::vector <ENodeB*> *eNBs = new std::vector <ENodeB*>;
-  for (int i = 0; i < nbCell; i++) {
+  i = 0;
+  for (; i < num_macro; i++) {
     ENodeB* enb = new ENodeB (i, cells->at (i));
     enb->GetPhy ()->SetDlChannel (dlChannels->at (i));
     enb->GetPhy ()->SetUlChannel (ulChannels->at (i));
@@ -187,7 +205,9 @@ static void MultiCell (int nbCell, double radius,
 
     enb->GetPhy ()->SetBandwidthManager (spectrums.at (i));
 
-    std::cout << "Created enb, id " << enb->GetIDNetworkNode()
+    enb->GetPhy()->SetTxPower(43);
+
+    std::cout << "Created Macro enb, id " << enb->GetIDNetworkNode()
       << ", cell id " << enb->GetCell ()->GetIdCell ()
       <<", position: " << enb->GetMobilityModel ()->GetAbsolutePosition ()->GetCoordinateX ()
       << " " << enb->GetMobilityModel ()->GetAbsolutePosition ()->GetCoordinateY ()
@@ -204,6 +224,29 @@ static void MultiCell (int nbCell, double radius,
     eNBs->push_back (enb);
   }
 
+  for (;i<num_micro + num_macro; i++){
+    ENodeB* enb = new ENodeB (i, cells->at (i));
+    enb->GetPhy ()->SetDlChannel (dlChannels->at (i));
+    enb->GetPhy ()->SetUlChannel (ulChannels->at (i));
+
+    enb->SetDLScheduler (downlink_scheduler_type, config_fname);
+
+    enb->GetPhy ()->SetBandwidthManager (spectrums.at (i));
+
+    enb->GetPhy()->SetTxPower(37);
+
+    std::cout << "Created Micro enb, id " << enb->GetIDNetworkNode()
+      << ", cell id " << enb->GetCell ()->GetIdCell ()
+      <<", position: " << enb->GetMobilityModel ()->GetAbsolutePosition ()->GetCoordinateX ()
+      << " " << enb->GetMobilityModel ()->GetAbsolutePosition ()->GetCoordinateY ()
+      << ", channels id " << enb->GetPhy ()->GetDlChannel ()->GetChannelId ()
+      << enb->GetPhy ()->GetUlChannel ()->GetChannelId ()  << std::endl;
+
+    spectrums.at (i)->Print ();
+    ulChannels->at (i)->AddDevice((NetworkNode*) enb);
+    nm->GetENodeBContainer ()->push_back (enb);
+    eNBs->push_back (enb);
+  }
   //Define Application Container
   VoIP VoIPApplication[nbVoIP*nbCell*nbUE];
   TraceBased VideoApplication[nbVideo*nbCell*nbUE];
@@ -257,7 +300,9 @@ static void MultiCell (int nbCell, double radius,
       //ue's random position
       double posX = positions->at (i)->GetCoordinateX ();
       double posY = positions->at (i)->GetCoordinateY ();
-      double speedDirection = (double)(rand() %360) * ((2*3.14)/360);;
+      double speedDirection;
+      if (speed == 0) { speedDirection == 0;}
+      else {(double)(rand() %360) * ((2*3.14)/360);}
 
       UserEquipment* ue = new UserEquipment (idUE,
           posX, posY, speed, speedDirection,

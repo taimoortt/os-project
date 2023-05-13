@@ -25,6 +25,7 @@
 #include "../load-parameters.h"
 #include "../device/ENodeB.h"
 #include "../device/HeNodeB.h"
+#include "../device/UserEquipment.h"
 #include "../protocolStack/mac/packet-scheduler/downlink-packet-scheduler.h"
 #include "../protocolStack/mac/AMCModule.h"
 #include "../core/spectrum/bandwidth-manager.h"
@@ -174,8 +175,37 @@ FrameManager::StartSubframe (void)
 {
 #ifdef FRAME_MANAGER_DEBUG
   std::cout << " --------- Start SubFrame, time =  "
-      << Simulator::Init()->Now() << " --------- " << std::endl;
+      << Simulator::Init()->Now() << " --------- " << "TTI: " << GetTTICounter() << std::endl;
 #endif
+
+  // Prints UE positioning logs after the handovers have occured.
+  if(GetTTICounter() == 120){
+    std::vector<ENodeB*> *enodebs = GetNetworkManager ()->GetENodeBContainer ();
+    cout << "ENB Size: " << enodebs->size() << endl;
+    for (auto iter = enodebs->begin (); iter != enodebs->end (); iter++) {
+  	  ENodeB* enb = *iter;
+      ENodeB::UserEquipmentRecords* ue_records = enb->GetUserEquipmentRecords();
+      cout << "UE Records Size: " << ue_records->size() << endl;
+      for (int i = 0; i < ue_records->size(); i++){
+          UserEquipment* x = (*ue_records)[i]->GetUE();
+          cout << GetTTICounter();
+          x->Print();
+      }
+    }
+  }
+
+  // if(GetTTICounter() == 2990){
+  //   std::vector<ENodeB*> *enodebs = GetNetworkManager ()->GetENodeBContainer ();
+  //   for (auto iter = enodebs->begin (); iter != enodebs->end (); iter++) {
+  // 	  ENodeB* enb = *iter;
+  //     ENodeB::UserEquipmentRecords* ue_records = enb->GetUserEquipmentRecords();
+  //     for (int i = 0; i < ue_records->size(); i++){
+  //         UserEquipment* x = (*ue_records)[i]->GetUE();
+  //         cout << GetTTICounter();
+  //         x->Print();
+  //     }
+  //   }
+  // }
 
   UpdateTTIcounter ();
   UpdateNbSubframes ();
@@ -736,7 +766,7 @@ FrameManager::RadioSaberAllocateOneRBSecondMute(
   int global_sum_tbs = 0;
   std::vector<FlowToSchedule*> global_cell_flow;
   const int index_no_mute = schedulers.size();
-  std::cout << "muting iteration for rb: " << rb_id << std::endl;
+  // std::cout << "muting iteration for rb: " << rb_id << std::endl;
   while (true) {
     int final_mute_id = -1;
     int max_sum_tbs = 0;
@@ -811,14 +841,14 @@ FrameManager::RadioSaberAllocateOneRBSecondMute(
     if (final_mute_id == index_no_mute) {
       global_sum_tbs = max_sum_tbs;
       global_cell_flow = max_cell_flow;
-      std::cout << "( null, " << global_sum_tbs << ") " << std::endl;
+      // std::cout << "( null, " << global_sum_tbs << ") " << std::endl;
       // terminate the loop since no more benefit by muting a cell
       break;
     }
     else {
       global_sum_tbs = max_sum_tbs;
       global_cells_muted.insert(final_mute_id);
-      std::cout << "(" << final_mute_id << ", " << global_sum_tbs << ") ";
+      // std::cout << "Muting Cell: (" << final_mute_id << ", " << global_sum_tbs << ") ";
       global_cell_flow = max_cell_flow;
       // update all flows of cell j
       for (int j = 0; j < schedulers.size(); j++) {
